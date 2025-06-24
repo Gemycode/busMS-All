@@ -48,6 +48,45 @@ export const loginUser = createAsyncThunk(
   }
 );
 
+// Fetch current user profile
+export const fetchProfile = createAsyncThunk(
+  'user/fetchProfile',
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await api.get('/users/me');
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Failed to fetch profile');
+    }
+  }
+);
+
+// Update current user profile
+export const updateProfile = createAsyncThunk(
+  'user/updateProfile',
+  async (profileData, { rejectWithValue }) => {
+    try {
+      const res = await api.patch('/users/me', profileData);
+      return res.data.user;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Failed to update profile');
+    }
+  }
+);
+
+// Change password
+export const changePassword = createAsyncThunk(
+  'user/changePassword',
+  async (passwords, { rejectWithValue }) => {
+    try {
+      const res = await api.patch('/users/change-password', passwords);
+      return res.data.message;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Failed to change password');
+    }
+  }
+);
+
 const initialState = {
   user: null,
   token: null,
@@ -100,6 +139,42 @@ const userSlice = createSlice({
         localStorage.setItem('user', JSON.stringify(action.payload.user));
       })
       .addCase(loginUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+      })
+      .addCase(fetchProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(updateProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+        localStorage.setItem('user', JSON.stringify(action.payload));
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(changePassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(changePassword.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(changePassword.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

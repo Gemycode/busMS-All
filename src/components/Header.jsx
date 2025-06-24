@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import { Link, useLocation } from "react-router-dom"
 import { useSelector, useDispatch } from 'react-redux';
@@ -85,6 +83,7 @@ const Header = () => {
                   className="w-9 h-9 rounded-full object-cover border-2 border-brand-beige"
                 />
                 <span className="font-semibold text-brand-beige">{user.firstName} {user.lastName}</span>
+                <Link to="/profile" className="px-3 py-1 bg-brand-beige text-brand-dark-blue rounded hover:bg-opacity-80 font-bold ml-2">Profile</Link>
                 <button
                   onClick={() => dispatch(logout())}
                   className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 font-bold ml-2"
@@ -155,6 +154,15 @@ const Header = () => {
             >
               Contact
             </Link>
+            {user && (
+              <Link
+                to="/profile"
+                className="block px-3 py-2 bg-brand-beige text-brand-dark-blue font-bold rounded-md mt-4"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Profile
+              </Link>
+            )}
             <Link
               to="/login"
               className="block px-3 py-2 bg-brand-beige text-brand-dark-blue font-bold rounded-md mt-4"

@@ -14,6 +14,7 @@ import ManagerDashboard from "./pages/ManagerDashboard"
 import DriverDashboard from "./pages/DriverDashboard"
 import MapView from "./pages/MapView"
 import RouteGuard from './components/RouteGuard'
+import Profile from "./pages/Profile"
 
 function App() {
   return (
@@ -48,6 +49,11 @@ function App() {
           </RouteGuard>
         } />
         <Route path="/map-view" element={<MapView />} />
+        <Route path="/profile" element={
+          <RouteGuard>
+            <Profile />
+          </RouteGuard>
+        } />
       </Routes>
       <Footer />
     </div>
