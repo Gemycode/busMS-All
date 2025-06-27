@@ -2,6 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
+import DynamicModal from "../components/DynamicModal"
+import { userSchema, busSchema, routeSchema } from "../components/schemas"
+import api from "../redux/api"
+import { useSelector, useDispatch } from "react-redux"
+import { fetchBuses } from "../redux/busSlice"
+import { fetchRoutes } from "../redux/routesSlice"
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -13,7 +19,20 @@ const AdminDashboard = () => {
 
   const [recentActivity, setRecentActivity] = useState([])
 
+  const [showUserModal, setShowUserModal] = useState(false)
+  const [showBusModal, setShowBusModal] = useState(false)
+  const [showRouteModal, setShowRouteModal] = useState(false)
+
+  const [routeMsg, setRouteMsg] = useState("")
+
+  const dispatch = useDispatch()
+  const { buses, loading: busesLoading, error: busesError } = useSelector((state) => state.buses)
+  const { routes, loading: routesLoading, error: routesError } = useSelector((state) => state.routes)
+
   useEffect(() => {
+    dispatch(fetchBuses())
+    dispatch(fetchRoutes())
+
     // Simulate loading dashboard data
     setTimeout(() => {
       setStats({
@@ -58,7 +77,7 @@ const AdminDashboard = () => {
         },
       ])
     }, 1000)
-  }, [])
+  }, [dispatch])
 
   return (
     <div className="font-sans text-gray-800 bg-gray-50 min-h-screen">
@@ -289,6 +308,80 @@ const AdminDashboard = () => {
                     </table>
                   </div>
                 </div>
+
+                <div className="bg-white rounded-lg shadow-md p-6 mt-8">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold text-brand-dark-blue">Bus Management</h2>
+                  </div>
+                  <div className="overflow-x-auto">
+                    {busesLoading ? <div>Loading...</div> : busesError ? <div className="text-red-600">{busesError}</div> : (
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bus Number</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacity</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Driver ID</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route ID</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {buses.map((bus) => (
+                            <tr key={bus._id}>
+                              <td className="px-6 py-4 whitespace-nowrap">{bus.BusNumber}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{bus.capacity}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{bus.status}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{bus.assigned_driver_id || '-'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{bus.route_id || '-'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button className="text-brand-medium-blue hover:text-brand-dark-blue mr-3">Edit</button>
+                                <button className="text-red-600 hover:text-red-900">Delete</button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-md p-6 mt-8">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold text-brand-dark-blue">Route Management</h2>
+                  </div>
+                  <div className="overflow-x-auto">
+                    {routesLoading ? <div>Loading...</div> : routesError ? <div className="text-red-600">{routesError}</div> : (
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stops Count</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estimated Time</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {routes.map((route) => (
+                            <tr key={route._id}>
+                              <td className="px-6 py-4 whitespace-nowrap">{route.name}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{route.start_point}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{route.end_point}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{route.stops?.length || 0}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{route.estimated_time}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button className="text-brand-medium-blue hover:text-brand-dark-blue mr-3">Edit</button>
+                                <button className="text-red-600 hover:text-red-900">Delete</button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Right Sidebar */}
@@ -356,27 +449,27 @@ const AdminDashboard = () => {
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <h2 className="text-xl font-bold text-brand-dark-blue mb-6">Quick Actions</h2>
                   <div className="space-y-3">
-                    <Link
-                      to="/admin/users/new"
+                    <button
+                      onClick={() => setShowUserModal(true)}
                       className="w-full flex items-center px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors duration-200"
                     >
                       <i className="fas fa-user-plus text-brand-medium-blue mr-3"></i>
                       <span className="text-sm font-medium">Add New User</span>
-                    </Link>
-                    <Link
-                      to="/admin/buses/new"
+                    </button>
+                    <button
+                      onClick={() => setShowBusModal(true)}
                       className="w-full flex items-center px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors duration-200"
                     >
                       <i className="fas fa-bus text-brand-medium-blue mr-3"></i>
                       <span className="text-sm font-medium">Add New Bus</span>
-                    </Link>
-                    <Link
-                      to="/admin/routes/new"
+                    </button>
+                    <button
+                      onClick={() => setShowRouteModal(true)}
                       className="w-full flex items-center px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors duration-200"
                     >
                       <i className="fas fa-route text-brand-medium-blue mr-3"></i>
                       <span className="text-sm font-medium">Create Route</span>
-                    </Link>
+                    </button>
                     <Link
                       to="/admin/reports"
                       className="w-full flex items-center px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors duration-200"
@@ -398,6 +491,46 @@ const AdminDashboard = () => {
           </div>
         </section>
       </main>
+      <DynamicModal
+        isOpen={showUserModal}
+        onClose={() => setShowUserModal(false)}
+        onSubmit={(data) => { setShowUserModal(false); console.log("User Data:", data); }}
+        schema={userSchema}
+        title="Add New User"
+      />
+      <DynamicModal
+        isOpen={showBusModal}
+        onClose={() => setShowBusModal(false)}
+        onSubmit={(data) => { setShowBusModal(false); console.log("Bus Data:", data); }}
+        schema={busSchema}
+        title="Add New Bus"
+      />
+      <DynamicModal
+        isOpen={showRouteModal}
+        onClose={() => { setShowRouteModal(false); setRouteMsg(""); }}
+        onSubmit={async (data) => {
+          setRouteMsg("");
+          try {
+            // Ensure all required fields are present
+            const payload = {
+              name: data.name,
+              start_point: data.start_point,
+              end_point: data.end_point,
+              stops: (typeof data.stops === 'string') ? data.stops.split(",").map(s => s.trim()).filter(Boolean) : [],
+              estimated_time: data.estimated_time,
+            };
+            const res = await api.post("/routes/", payload);
+            setRouteMsg("Route created successfully!");
+            setTimeout(() => { setShowRouteModal(false); setRouteMsg(""); }, 1200);
+          } catch (err) {
+            console.error("Route creation error:", err, err.response);
+            setRouteMsg(err.response?.data?.message || err.message || "Error creating route");
+          }
+        }}
+        schema={routeSchema}
+        title="Create Route"
+      />
+      {routeMsg && <div className="text-center text-sm mt-2 mb-4 font-bold" style={{color: routeMsg.includes('success') ? '#16a34a' : '#dc2626'}}>{routeMsg}</div>}
     </div>
   )
 }
