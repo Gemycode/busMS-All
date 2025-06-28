@@ -8,6 +8,7 @@ import api from "../redux/api"
 import { useSelector, useDispatch } from "react-redux"
 import { fetchBuses } from "../redux/busSlice"
 import { fetchRoutes } from "../redux/routesSlice"
+import dayjs from "dayjs"
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -29,18 +30,28 @@ const AdminDashboard = () => {
   const { buses, loading: busesLoading, error: busesError } = useSelector((state) => state.buses)
   const { routes, loading: routesLoading, error: routesError } = useSelector((state) => state.routes)
 
+  const previousRoutesCount = routes?.filter(route => dayjs(route.createdAt).isBefore(dayjs().subtract(1, 'day'))).length ?? 0;
+
+  // Update stats when routes or buses change
+  useEffect(() => {
+    setStats(prevStats => ({
+      ...prevStats,
+      totalRoutes: routes?.length ?? 0,
+      activeBuses: buses?.filter(bus => bus.status === 'active').length ?? 0,
+    }))
+  }, [routes, buses])
+
   useEffect(() => {
     dispatch(fetchBuses())
     dispatch(fetchRoutes())
 
     // Simulate loading dashboard data
     setTimeout(() => {
-      setStats({
+      setStats(prevStats => ({
+        ...prevStats,
         totalUsers: 15847,
-        activeBuses: 342,
-        totalRoutes: 89,
         systemUptime: 99.8,
-      })
+      }))
 
       setRecentActivity([
         {
@@ -149,8 +160,13 @@ const AdminDashboard = () => {
                   <div>
                     <p className="text-sm font-medium text-gray-500">Total Routes</p>
                     <p className="text-3xl font-bold text-gray-900">{stats.totalRoutes}</p>
-                    <p className="text-sm text-blue-600">
-                      <i className="fas fa-minus mr-1"></i>No change
+                    <p className="text-sm flex items-center gap-1" style={{ color: stats.totalRoutes > previousRoutesCount ? '#16a34a' : stats.totalRoutes < previousRoutesCount ? '#dc2626' : '#64748b' }}>
+                      {(() => {
+                        const diff = stats.totalRoutes - previousRoutesCount;
+                        if (diff > 0) return <><i className="fas fa-arrow-up"></i>+{diff} Increased Routes</>;
+                        if (diff < 0) return <><i className="fas fa-arrow-down"></i>{diff} Decreased Routes</>;
+                        return <><i className="fas fa-minus"></i>No change</>;
+                      })()}
                     </p>
                   </div>
                   <div className="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center">
@@ -312,6 +328,12 @@ const AdminDashboard = () => {
                 <div className="bg-white rounded-lg shadow-md p-6 mt-8">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-brand-dark-blue">Bus Management</h2>
+                    <Link
+                      to="/admin/buses"
+                      className="px-3 py-1 bg-brand-medium-blue text-white rounded-md text-sm hover:bg-opacity-90"
+                    >
+                      View All
+                    </Link>
                   </div>
                   <div className="overflow-x-auto">
                     {busesLoading ? <div>Loading...</div> : busesError ? <div className="text-red-600">{busesError}</div> : (
@@ -349,6 +371,12 @@ const AdminDashboard = () => {
                 <div className="bg-white rounded-lg shadow-md p-6 mt-8">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-brand-dark-blue">Route Management</h2>
+                    <Link
+                      to="/admin/routes"
+                      className="px-3 py-1 bg-brand-medium-blue text-white rounded-md text-sm hover:bg-opacity-90"
+                    >
+                      View All
+                    </Link>
                   </div>
                   <div className="overflow-x-auto">
                     {routesLoading ? <div>Loading...</div> : routesError ? <div className="text-red-600">{routesError}</div> : (
