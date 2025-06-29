@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom"
+import { Routes, Route, Navigate } from "react-router-dom"
 import Header from "./components/Header"
 import Footer from "./components/Footer"
 import Home from "./pages/Home"
@@ -15,6 +15,7 @@ import DriverDashboard from "./pages/DriverDashboard"
 import MapView from "./pages/MapView"
 import RouteGuard from './components/RouteGuard'
 import Profile from "./pages/Profile"
+import AttendanceManagement from "./pages/AttendanceManagement"
 
 function App() {
   return (
@@ -54,6 +55,13 @@ function App() {
             <Profile />
           </RouteGuard>
         } />
+        <Route path="/attendance" element={
+          <RouteGuard allowedRoles={["admin", "manager"]}>
+            <AttendanceManagement />
+          </RouteGuard>
+        } />
+        {/* Catch all route - redirect to home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Footer />
     </div>

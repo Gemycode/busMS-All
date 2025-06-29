@@ -83,10 +83,26 @@ const Header = () => {
                   className="w-9 h-9 rounded-full object-cover border-2 border-brand-beige"
                 />
                 <span className="font-semibold text-brand-beige">{user.firstName} {user.lastName}</span>
-                <Link to="/profile" className="px-3 py-1 bg-brand-beige text-brand-dark-blue rounded hover:bg-opacity-80 font-bold ml-2">Profile</Link>
+                
+                {/* Role-based navigation */}
+                {user.role === 'admin' && (
+                  <Link to="/admin-dashboard" className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 font-bold">Admin</Link>
+                )}
+                {user.role === 'manager' && (
+                  <Link to="/manager-dashboard" className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 font-bold">Manager</Link>
+                )}
+                {user.role === 'driver' && (
+                  <Link to="/driver-dashboard" className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 font-bold">Driver</Link>
+                )}
+                
+                {(user.role === 'admin' || user.role === 'manager') && (
+                  <Link to="/attendance" className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 font-bold">Attendance</Link>
+                )}
+                
+                <Link to="/profile" className="px-3 py-1 bg-brand-beige text-brand-dark-blue rounded hover:bg-opacity-80 font-bold">Profile</Link>
                 <button
                   onClick={() => dispatch(logout())}
-                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 font-bold ml-2"
+                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 font-bold"
                 >
                   Logout
                 </button>
@@ -163,6 +179,45 @@ const Header = () => {
                 Profile
               </Link>
             )}
+            
+            {/* Role-based mobile navigation */}
+            {user && user.role === 'admin' && (
+              <Link
+                to="/admin-dashboard"
+                className="block px-3 py-2 bg-blue-500 text-white font-bold rounded-md mt-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Admin Dashboard
+              </Link>
+            )}
+            {user && user.role === 'manager' && (
+              <Link
+                to="/manager-dashboard"
+                className="block px-3 py-2 bg-purple-500 text-white font-bold rounded-md mt-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Manager Dashboard
+              </Link>
+            )}
+            {user && user.role === 'driver' && (
+              <Link
+                to="/driver-dashboard"
+                className="block px-3 py-2 bg-green-500 text-white font-bold rounded-md mt-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Driver Dashboard
+              </Link>
+            )}
+            {user && (user.role === 'admin' || user.role === 'manager') && (
+              <Link
+                to="/attendance"
+                className="block px-3 py-2 bg-orange-500 text-white font-bold rounded-md mt-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Attendance Management
+              </Link>
+            )}
+            
             <Link
               to="/login"
               className="block px-3 py-2 bg-brand-beige text-brand-dark-blue font-bold rounded-md mt-4"

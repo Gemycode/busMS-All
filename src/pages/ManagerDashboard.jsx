@@ -1,10 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useDispatch, useSelector } from "react-redux"
 import { Link } from "react-router-dom"
 import LiveTrackingMap from "../components/LiveTrackingMap"
+import { fetchAttendanceStats } from "../redux/attendanceSlice"
 
 const ManagerDashboard = () => {
+  const dispatch = useDispatch();
+  const { stats: attendanceStats } = useSelector(state => state.attendance);
+  
   const [stats, setStats] = useState({
     activeRoutes: 0,
     totalDrivers: 0,
@@ -14,6 +19,11 @@ const ManagerDashboard = () => {
 
   const [alerts, setAlerts] = useState([])
   const [todayRoutes, setTodayRoutes] = useState([])
+
+  useEffect(() => {
+    // Fetch attendance statistics
+    dispatch(fetchAttendanceStats());
+  }, [dispatch]);
 
   useEffect(() => {
     // Simulate loading dashboard data
@@ -136,6 +146,12 @@ const ManagerDashboard = () => {
                   <i className="fas fa-route mr-2"></i>Manage Routes
                 </Link>
                 <Link
+                  to="/attendance"
+                  className="px-4 py-2 bg-orange-500 text-white font-medium rounded-md hover:bg-orange-600 transition-all duration-200"
+                >
+                  <i className="fas fa-clipboard-check mr-2"></i>Attendance
+                </Link>
+                <Link
                   to="/manager/drivers"
                   className="px-4 py-2 bg-white bg-opacity-20 text-white font-medium rounded-md hover:bg-opacity-30 transition-all duration-200"
                 >
@@ -200,13 +216,29 @@ const ManagerDashboard = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-500">Fuel Efficiency</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.fuelEfficiency}</p>
-                    <p className="text-sm text-yellow-600">
-                      <span className="text-xs">MPG</span> Fleet average
+                    <p className="text-3xl font-bold text-gray-900">{stats.fuelEfficiency} mpg</p>
+                    <p className="text-sm text-green-600">
+                      <i className="fas fa-arrow-up mr-1"></i>+0.3 mpg this month
                     </p>
                   </div>
                   <div className="h-12 w-12 bg-yellow-100 rounded-full flex items-center justify-center">
                     <i className="fas fa-gas-pump text-yellow-600 text-xl"></i>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Employee Attendance</p>
+                    <p className="text-3xl font-bold text-gray-900">{attendanceStats?.employees || 0}</p>
+                    <p className="text-sm text-green-600">
+                      <i className="fas fa-clipboard-check mr-1"></i>
+                      {attendanceStats?.attendanceRate || 0}% rate
+                    </p>
+                  </div>
+                  <div className="h-12 w-12 bg-orange-100 rounded-full flex items-center justify-center">
+                    <i className="fas fa-clipboard-check text-orange-600 text-xl"></i>
                   </div>
                 </div>
               </div>
@@ -334,6 +366,29 @@ const ManagerDashboard = () => {
                     <div className="text-center p-4 bg-gray-50 rounded-lg">
                       <p className="text-2xl font-bold text-purple-600">98.1%</p>
                       <p className="text-sm text-gray-600">Parent Satisfaction</p>
+                    </div>
+                  </div>
+
+                  {/* Attendance Overview */}
+                  <div className="mt-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Attendance Overview</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+                        <p className="text-xl font-bold text-orange-600">{attendanceStats?.total || 0}</p>
+                        <p className="text-sm text-gray-600">Total Records</p>
+                      </div>
+                      <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                        <p className="text-xl font-bold text-green-600">{attendanceStats?.present || 0}</p>
+                        <p className="text-sm text-gray-600">Present</p>
+                      </div>
+                      <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
+                        <p className="text-xl font-bold text-red-600">{attendanceStats?.absent || 0}</p>
+                        <p className="text-sm text-gray-600">Absent</p>
+                      </div>
+                      <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <p className="text-xl font-bold text-blue-600">{attendanceStats?.students || 0}</p>
+                        <p className="text-sm text-gray-600">Students</p>
+                      </div>
                     </div>
                   </div>
                 </div>
