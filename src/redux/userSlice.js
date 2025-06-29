@@ -88,8 +88,8 @@ export const changePassword = createAsyncThunk(
 );
 
 const initialState = {
-  user: null,
-  token: null,
+  user: JSON.parse(localStorage.getItem('user')) || null,
+  token: localStorage.getItem('token') || null,
   loading: false,
   error: null,
 };
@@ -119,8 +119,10 @@ const userSlice = createSlice({
       .addCase(registerUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
-        state.token = action.payload.user.token;
-        localStorage.setItem('token', action.payload.user.token);
+        state.token = action.payload.token;
+        if (action.payload.token && action.payload.token !== 'undefined') {
+          localStorage.setItem('token', action.payload.token);
+        }
         localStorage.setItem('user', JSON.stringify(action.payload.user));
       })
       .addCase(registerUser.rejected, (state, action) => {
@@ -134,8 +136,10 @@ const userSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
-        state.token = action.payload.user.token;
-        localStorage.setItem('token', action.payload.user.token);
+        state.token = action.payload.token;
+        if (action.payload.token && action.payload.token !== 'undefined') {
+          localStorage.setItem('token', action.payload.token);
+        }
         localStorage.setItem('user', JSON.stringify(action.payload.user));
       })
       .addCase(loginUser.rejected, (state, action) => {

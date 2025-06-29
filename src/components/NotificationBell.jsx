@@ -119,10 +119,11 @@ const NotificationBell = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 text-gray-600 hover:text-gray-800 transition-colors"
+        aria-label="Show notifications"
       >
-        <i className="fas fa-bell text-xl"></i>
+        <i className={`fas fa-bell text-white text-2xl transition-all duration-200 ${unreadCount > 0 ? 'animate-shake drop-shadow-lg' : ''}`}></i>
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+          <span className={`absolute top-0 right-0 h-5 w-5 ${unreadCount > 0 ? 'bg-red-500' : 'bg-brand-dark-blue'} text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg animate-pulse border border-brand-beige`}>
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -215,6 +216,20 @@ const NotificationBell = () => {
           )}
         </div>
       )}
+
+      <style>{`
+        @keyframes shake {
+          0% { transform: rotate(0deg); }
+          20% { transform: rotate(-10deg); }
+          40% { transform: rotate(10deg); }
+          60% { transform: rotate(-10deg); }
+          80% { transform: rotate(10deg); }
+          100% { transform: rotate(0deg); }
+        }
+        .animate-shake {
+          animation: shake 0.6s;
+        }
+      `}</style>
     </div>
   );
 };
