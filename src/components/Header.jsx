@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Link, useLocation } from "react-router-dom"
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../redux/userSlice';
+import NotificationBell from './NotificationBell';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -54,6 +55,14 @@ const Header = () => {
             >
               Contact
             </Link>
+            {user && (
+              <Link
+                to="/reports"
+                className={`font-medium text-white hover:text-brand-beige transition-colors duration-200 nav-link ${isActive("/reports") ? "active" : ""}`}
+              >
+                <i className="fas fa-chart-bar mr-1"></i>Reports
+              </Link>
+            )}
 
             {/* Weather Widget */}
             <div className="hidden lg:flex items-center text-white">
@@ -73,6 +82,9 @@ const Header = () => {
                 <i className="fas fa-chevron-down text-xs"></i>
               </div>
             </div>
+
+            {/* Notification Bell */}
+            {user && <NotificationBell />}
 
             {/* User Info or Sign In */}
             {user ? (
@@ -102,7 +114,9 @@ const Header = () => {
           </nav>
 
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
+          <div className="md:hidden flex items-center space-x-2">
+            {/* Mobile Notification Bell */}
+            {user && <NotificationBell />}
             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-white focus:outline-none">
               <div className={`hamburger ${mobileMenuOpen ? "open" : ""}`}>
                 <span></span>
@@ -154,6 +168,15 @@ const Header = () => {
             >
               Contact
             </Link>
+            {user && (
+              <Link
+                to="/reports"
+                className="block px-3 py-2 text-white hover:text-brand-beige font-medium rounded-md"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <i className="fas fa-chart-bar mr-2"></i>Reports
+              </Link>
+            )}
             {user && (
               <Link
                 to="/profile"

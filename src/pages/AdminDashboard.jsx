@@ -4,10 +4,9 @@ import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import DynamicModal from "../components/DynamicModal"
 import { userSchema, busSchema, routeSchema } from "../components/schemas"
-import api from "../redux/api"
 import { useSelector, useDispatch } from "react-redux"
-import { fetchBuses } from "../redux/busSlice"
-import { fetchRoutes } from "../redux/routesSlice"
+import { fetchBuses, updateBus, deleteBus, clearMessage as clearBusMessage } from "../redux/busSlice"
+import { fetchRoutes, createRoute, updateRoute, deleteRoute, clearMessage as clearRouteMessage } from "../redux/routesSlice"
 import dayjs from "dayjs"
 
 const AdminDashboard = () => {
@@ -23,12 +22,14 @@ const AdminDashboard = () => {
   const [showUserModal, setShowUserModal] = useState(false)
   const [showBusModal, setShowBusModal] = useState(false)
   const [showRouteModal, setShowRouteModal] = useState(false)
-
-  const [routeMsg, setRouteMsg] = useState("")
+  const [showEditRouteModal, setShowEditRouteModal] = useState(false)
+  const [editingRoute, setEditingRoute] = useState(null)
+  const [showEditBusModal, setShowEditBusModal] = useState(false)
+  const [editingBus, setEditingBus] = useState(null)
 
   const dispatch = useDispatch()
-  const { buses, loading: busesLoading, error: busesError } = useSelector((state) => state.buses)
-  const { routes, loading: routesLoading, error: routesError } = useSelector((state) => state.routes)
+  const { buses, loading: busesLoading, error: busesError, message: busMsg } = useSelector((state) => state.buses)
+  const { routes, loading: routesLoading, error: routesError, message: routeMsg } = useSelector((state) => state.routes)
 
   const previousRoutesCount = routes?.filter(route => dayjs(route.createdAt).isBefore(dayjs().subtract(1, 'day'))).length ?? 0;
 
@@ -40,6 +41,25 @@ const AdminDashboard = () => {
       activeBuses: buses?.filter(bus => bus.status === 'active').length ?? 0,
     }))
   }, [routes, buses])
+
+  // Clear messages after 3 seconds
+  useEffect(() => {
+    if (routeMsg) {
+      const timer = setTimeout(() => {
+        dispatch(clearRouteMessage())
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [routeMsg, dispatch])
+
+  useEffect(() => {
+    if (busMsg) {
+      const timer = setTimeout(() => {
+        dispatch(clearBusMessage())
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [busMsg, dispatch])
 
   useEffect(() => {
     dispatch(fetchBuses())
@@ -357,8 +377,16 @@ const AdminDashboard = () => {
                               <td className="px-6 py-4 whitespace-nowrap">{bus.assigned_driver_id || '-'}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{bus.route_id || '-'}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <button className="text-brand-medium-blue hover:text-brand-dark-blue mr-3">Edit</button>
-                                <button className="text-red-600 hover:text-red-900">Delete</button>
+                                <button className="text-brand-medium-blue hover:text-brand-dark-blue mr-3" onClick={() => { setEditingBus(bus); setShowEditBusModal(true); }}>Edit</button>
+                                <button className="text-red-600 hover:text-red-900" onClick={async () => { 
+                                  if (window.confirm('Are you sure you want to delete this bus?')) { 
+                                    try {
+                                      await dispatch(deleteBus(bus._id));
+                                    } catch (err) {
+                                      console.error("Bus deletion error:", err);
+                                    }
+                                  } 
+                                }}>Delete</button>
                               </td>
                             </tr>
                           ))}
@@ -400,8 +428,16 @@ const AdminDashboard = () => {
                               <td className="px-6 py-4 whitespace-nowrap">{route.stops?.length || 0}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{route.estimated_time}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <button className="text-brand-medium-blue hover:text-brand-dark-blue mr-3">Edit</button>
-                                <button className="text-red-600 hover:text-red-900">Delete</button>
+                                <button className="text-brand-medium-blue hover:text-brand-dark-blue mr-3" onClick={() => { setEditingRoute(route); setShowEditRouteModal(true); }}>Edit</button>
+                                <button className="text-red-600 hover:text-red-900" onClick={async () => { 
+                                  if (window.confirm('Are you sure you want to delete this route?')) { 
+                                    try {
+                                      await dispatch(deleteRoute(route._id));
+                                    } catch (err) {
+                                      console.error("Route deletion error:", err);
+                                    }
+                                  } 
+                                }}>Delete</button>
                               </td>
                             </tr>
                           ))}
@@ -414,31 +450,33 @@ const AdminDashboard = () => {
 
               {/* Right Sidebar */}
               <div className="lg:col-span-1">
-                {/* Recent Activity */}
                 <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-                  <h2 className="text-xl font-bold text-brand-dark-blue mb-6">Recent Activity</h2>
-                  <div className="space-y-4">
-                    {recentActivity.map((activity) => (
-                      <div key={activity.id} className="flex items-start">
-                        <div className="flex-shrink-0">
-                          <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
-                            <i className={`fas ${activity.icon} ${activity.color} text-sm`}></i>
+                  {/* Recent Activity */}
+                  <div>
+                    <h2 className="text-xl font-bold text-brand-dark-blue mb-6">Recent Activity</h2>
+                    <div className="space-y-4">
+                      {recentActivity.map((activity) => (
+                        <div key={activity.id} className="flex items-start">
+                          <div className="flex-shrink-0">
+                            <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
+                              <i className={`fas ${activity.icon} ${activity.color} text-sm`}></i>
+                            </div>
+                          </div>
+                          <div className="ml-3 flex-1">
+                            <p className="text-sm text-gray-900">{activity.message}</p>
+                            <p className="text-xs text-gray-500">{activity.time}</p>
                           </div>
                         </div>
-                        <div className="ml-3 flex-1">
-                          <p className="text-sm text-gray-900">{activity.message}</p>
-                          <p className="text-xs text-gray-500">{activity.time}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-6">
-                    <Link
-                      to="/admin/activity"
-                      className="text-sm text-brand-medium-blue hover:text-brand-dark-blue font-medium"
-                    >
-                      View all activity →
-                    </Link>
+                      ))}
+                    </div>
+                    <div className="mt-6">
+                      <Link
+                        to="/admin/activity"
+                        className="text-sm text-brand-medium-blue hover:text-brand-dark-blue font-medium"
+                      >
+                        View all activity →
+                      </Link>
+                    </div>
                   </div>
                 </div>
 
@@ -499,6 +537,13 @@ const AdminDashboard = () => {
                       <span className="text-sm font-medium">Create Route</span>
                     </button>
                     <Link
+                      to="/admin/driver-reports"
+                      className="w-full flex items-center px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors duration-200"
+                    >
+                      <i className="fas fa-id-badge text-brand-medium-blue mr-3"></i>
+                      <span className="text-sm font-medium">Driver Reports</span>
+                    </Link>
+                    <Link
                       to="/admin/reports"
                       className="w-full flex items-center px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors duration-200"
                     >
@@ -535,11 +580,9 @@ const AdminDashboard = () => {
       />
       <DynamicModal
         isOpen={showRouteModal}
-        onClose={() => { setShowRouteModal(false); setRouteMsg(""); }}
+        onClose={() => { setShowRouteModal(false); }}
         onSubmit={async (data) => {
-          setRouteMsg("");
           try {
-            // Ensure all required fields are present
             const payload = {
               name: data.name,
               start_point: data.start_point,
@@ -547,18 +590,63 @@ const AdminDashboard = () => {
               stops: (typeof data.stops === 'string') ? data.stops.split(",").map(s => s.trim()).filter(Boolean) : [],
               estimated_time: data.estimated_time,
             };
-            const res = await api.post("/routes/", payload);
-            setRouteMsg("Route created successfully!");
-            setTimeout(() => { setShowRouteModal(false); setRouteMsg(""); }, 1200);
+            await dispatch(createRoute(payload));
+            setShowRouteModal(false);
           } catch (err) {
-            console.error("Route creation error:", err, err.response);
-            setRouteMsg(err.response?.data?.message || err.message || "Error creating route");
+            console.error("Route creation error:", err);
           }
         }}
         schema={routeSchema}
         title="Create Route"
       />
+      <DynamicModal
+        isOpen={showEditRouteModal}
+        onClose={() => { setShowEditRouteModal(false); setEditingRoute(null); }}
+        onSubmit={async (data) => {
+          try {
+            const payload = {
+              name: data.name,
+              start_point: data.start_point,
+              end_point: data.end_point,
+              stops: (typeof data.stops === 'string') ? data.stops.split(",").map(s => s.trim()).filter(Boolean) : [],
+              estimated_time: data.estimated_time,
+            };
+            await dispatch(updateRoute({ id: editingRoute._id, routeData: payload }));
+            setShowEditRouteModal(false);
+            setEditingRoute(null);
+          } catch (err) {
+            console.error("Route update error:", err);
+          }
+        }}
+        schema={routeSchema}
+        title="Edit Route"
+        initialData={editingRoute}
+      />
+      <DynamicModal
+        isOpen={showEditBusModal}
+        onClose={() => { setShowEditBusModal(false); setEditingBus(null); }}
+        onSubmit={async (data) => {
+          try {
+            const payload = {
+              BusNumber: data.BusNumber,
+              capacity: data.capacity,
+              status: data.status,
+              assigned_driver_id: data.assigned_driver_id || null,
+              route_id: data.route_id || null,
+            };
+            await dispatch(updateBus({ id: editingBus._id, busData: payload }));
+            setShowEditBusModal(false);
+            setEditingBus(null);
+          } catch (err) {
+            console.error("Bus update error:", err);
+          }
+        }}
+        schema={busSchema}
+        title="Edit Bus"
+        initialData={editingBus}
+      />
       {routeMsg && <div className="text-center text-sm mt-2 mb-4 font-bold" style={{color: routeMsg.includes('success') ? '#16a34a' : '#dc2626'}}>{routeMsg}</div>}
+      {busMsg && <div className="text-center text-sm mt-2 mb-4 font-bold" style={{color: busMsg.includes('success') ? '#16a34a' : '#dc2626'}}>{busMsg}</div>}
     </div>
   )
 }

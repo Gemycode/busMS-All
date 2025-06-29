@@ -1,11 +1,13 @@
+"use client"
+
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const Profile = () => {
+const Help = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Redirect to settings page where profile functionality is now located
+    // Redirect to settings page where help functionality is now located
     navigate('/settings', { replace: true });
   }, [navigate]);
 
@@ -19,4 +21,4 @@ const Profile = () => {
   );
 };
 
-export default Profile; 
+export default Help; 

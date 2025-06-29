@@ -872,6 +872,34 @@ const Login = () => {
               </p>
             </div>
 
+            {/* Specialized Login Links */}
+            <div className="mt-6 p-4 bg-brand-beige rounded-lg shadow-md">
+              <h3 className="text-lg font-bold text-brand-dark-blue mb-4">Specialized Access</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <Link
+                  to="/login-admin"
+                  className="flex items-center justify-center px-4 py-3 bg-brand-dark-blue text-white rounded-md hover:bg-blue-800 transition-colors duration-200"
+                >
+                  <i className="fas fa-shield-alt mr-2"></i>
+                  Admin Login
+                </Link>
+                <Link
+                  to="/login-driver"
+                  className="flex items-center justify-center px-4 py-3 bg-brand-medium-blue text-white rounded-md hover:bg-blue-600 transition-colors duration-200"
+                >
+                  <i className="fas fa-bus mr-2"></i>
+                  Driver Login
+                </Link>
+                <Link
+                  to="/register-parent"
+                  className="flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200"
+                >
+                  <i className="fas fa-user-plus mr-2"></i>
+                  Parent Registration
+                </Link>
+              </div>
+            </div>
+
             {/* Accessibility Options */}
             <div className="mt-8 p-4 bg-white rounded-lg shadow-md">
               <h3 className="text-lg font-bold text-brand-dark-blue mb-4">Accessibility Options</h3>

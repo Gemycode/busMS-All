@@ -7,12 +7,14 @@ const InteractiveMap = ({
   buses = [],
   routes = [],
   stops = [],
-  center = { lat: 37.7749, lng: -122.4194 },
+  center = { lat: 24.7136, lng: 46.6753 },
   zoom = 12,
   showControls = true,
   onBusClick = null,
   onStopClick = null,
   userRole = "parent",
+  showTraffic = false,
+  showWeather = false,
 }) => {
   const mapRef = useRef(null)
   const [mapCenter, setMapCenter] = useState(center)
@@ -21,6 +23,8 @@ const InteractiveMap = ({
   const [selectedStop, setSelectedStop] = useState(null)
   const [isTracking, setIsTracking] = useState(false)
   const [mapStyle, setMapStyle] = useState("standard")
+  const [trafficData, setTrafficData] = useState([])
+  const [weatherData, setWeatherData] = useState(null)
 
   // Simulate real-time GPS updates
   useEffect(() => {
@@ -39,6 +43,34 @@ const InteractiveMap = ({
 
     return () => clearInterval(interval)
   }, [buses])
+
+  // Simulate traffic data
+  useEffect(() => {
+    if (showTraffic) {
+      const trafficPoints = [
+        { lat: 24.7136, lng: 46.6753, severity: "moderate" },
+        { lat: 24.7236, lng: 46.6853, severity: "heavy" },
+        { lat: 24.7036, lng: 46.6653, severity: "light" },
+      ]
+      setTrafficData(trafficPoints)
+    } else {
+      setTrafficData([])
+    }
+  }, [showTraffic])
+
+  // Simulate weather data
+  useEffect(() => {
+    if (showWeather) {
+      setWeatherData({
+        temperature: 28,
+        condition: "sunny",
+        humidity: 45,
+        windSpeed: 12
+      })
+    } else {
+      setWeatherData(null)
+    }
+  }, [showWeather])
 
   const handleBusClick = (bus) => {
     setSelectedBus(bus)
@@ -109,6 +141,34 @@ const InteractiveMap = ({
     }
   }
 
+  const getTrafficColor = (severity) => {
+    switch (severity) {
+      case "light":
+        return "#10B981" // green
+      case "moderate":
+        return "#F59E0B" // yellow
+      case "heavy":
+        return "#EF4444" // red
+      default:
+        return "#6B7280" // gray
+    }
+  }
+
+  const getWeatherIcon = (condition) => {
+    switch (condition) {
+      case "sunny":
+        return "fas fa-sun"
+      case "cloudy":
+        return "fas fa-cloud"
+      case "rainy":
+        return "fas fa-cloud-rain"
+      case "stormy":
+        return "fas fa-bolt"
+      default:
+        return "fas fa-sun"
+    }
+  }
+
   return (
     <div className="relative bg-white rounded-lg shadow-md overflow-hidden" style={{ height }}>
       {/* Map Container */}
@@ -134,6 +194,36 @@ const InteractiveMap = ({
             <rect width="100%" height="100%" fill="url(#grid)" />
           </svg>
         </div>
+
+        {/* Weather Overlay */}
+        {showWeather && weatherData && (
+          <div className="absolute top-4 left-4 bg-white bg-opacity-90 rounded-lg shadow-md p-3">
+            <div className="flex items-center space-x-2">
+              <i className={`${getWeatherIcon(weatherData.condition)} text-yellow-500`}></i>
+              <div>
+                <div className="text-sm font-medium">{weatherData.temperature}°C</div>
+                <div className="text-xs text-gray-500">{weatherData.condition}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Traffic Overlay */}
+        {showTraffic && trafficData.map((point, index) => (
+          <div
+            key={index}
+            className="absolute transform -translate-x-1/2 -translate-y-1/2"
+            style={{
+              left: `${(point.lng - mapCenter.lng) * 1000 + 50}%`,
+              top: `${-(point.lat - mapCenter.lat) * 1000 + 50}%`,
+            }}
+          >
+            <div
+              className="w-6 h-6 rounded-full border-2 border-white shadow-lg animate-pulse"
+              style={{ backgroundColor: getTrafficColor(point.severity) }}
+            ></div>
+          </div>
+        ))}
 
         {/* Routes */}
         {routes.map((route, index) => (
@@ -174,6 +264,14 @@ const InteractiveMap = ({
                   Type: {stop.type} | Students: {stop.studentCount || 0}
                 </div>
                 {stop.nextArrival && <div className="text-xs text-blue-600 mt-1">Next bus: {stop.nextArrival}</div>}
+                <div className="mt-2 flex space-x-2">
+                  <button className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600">
+                    <i className="fas fa-directions mr-1"></i>Directions
+                  </button>
+                  <button className="px-2 py-1 bg-gray-500 text-white rounded text-xs hover:bg-gray-600">
+                    <i className="fas fa-info mr-1"></i>Info
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -201,7 +299,7 @@ const InteractiveMap = ({
 
               {/* Bus Number Badge */}
               <div className="absolute -top-2 -right-2 bg-white text-xs font-bold text-gray-800 rounded-full w-5 h-5 flex items-center justify-center shadow">
-                {bus.number}
+                {bus.number.split('-')[1]}
               </div>
 
               {/* Direction Indicator */}
@@ -235,17 +333,22 @@ const InteractiveMap = ({
                     <div>
                       Passengers: {bus.passengers}/{bus.capacity}
                     </div>
-                    <div>Speed: {bus.speed || 0} mph</div>
+                    <div>Speed: {bus.speed || 0} km/h</div>
                     <div>Next Stop: {bus.nextStop}</div>
                     {bus.eta && <div>ETA: {bus.eta}</div>}
+                    {bus.fuelLevel && <div>Fuel: {bus.fuelLevel}%</div>}
+                    {bus.temperature && <div>Temp: {bus.temperature}°C</div>}
                   </div>
 
                   <div className="mt-3 flex space-x-2">
                     <button className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600">
-                      Track
+                      <i className="fas fa-map-marker-alt mr-1"></i>Track
+                    </button>
+                    <button className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600">
+                      <i className="fas fa-phone mr-1"></i>Contact
                     </button>
                     <button className="px-2 py-1 bg-gray-500 text-white rounded text-xs hover:bg-gray-600">
-                      Contact
+                      <i className="fas fa-info mr-1"></i>Details
                     </button>
                   </div>
                 </div>
@@ -299,10 +402,30 @@ const InteractiveMap = ({
             >
               <i className="fas fa-layer-group"></i>
             </button>
+
+            {/* Traffic Toggle */}
+            <button
+              onClick={() => setTrafficData(showTraffic ? [] : trafficData)}
+              className={`w-10 h-10 rounded-lg shadow-md flex items-center justify-center ${
+                showTraffic ? "bg-red-500 text-white hover:bg-red-600" : "bg-white text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <i className="fas fa-car"></i>
+            </button>
+
+            {/* Weather Toggle */}
+            <button
+              onClick={() => setWeatherData(showWeather ? null : weatherData)}
+              className={`w-10 h-10 rounded-lg shadow-md flex items-center justify-center ${
+                showWeather ? "bg-blue-500 text-white hover:bg-blue-600" : "bg-white text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <i className="fas fa-cloud-sun"></i>
+            </button>
           </div>
         )}
 
-        {/* Map Legend */}
+        {/* Enhanced Map Legend */}
         <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-md p-3">
           <div className="text-xs font-medium text-gray-900 mb-2">Legend</div>
           <div className="space-y-1">
@@ -322,10 +445,26 @@ const InteractiveMap = ({
               <div className="w-3 h-3 bg-purple-500 rounded"></div>
               <span className="text-xs text-gray-600">School</span>
             </div>
+            {showTraffic && (
+              <>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-green-500 rounded animate-pulse"></div>
+                  <span className="text-xs text-gray-600">Light Traffic</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-yellow-500 rounded animate-pulse"></div>
+                  <span className="text-xs text-gray-600">Moderate Traffic</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-red-500 rounded animate-pulse"></div>
+                  <span className="text-xs text-gray-600">Heavy Traffic</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Real-time Status */}
+        {/* Enhanced Real-time Status */}
         <div className="absolute top-4 left-4 bg-white rounded-lg shadow-md p-3">
           <div className="flex items-center space-x-2">
             <div className={`w-2 h-2 rounded-full ${isTracking ? "bg-green-500" : "bg-gray-400"}`}></div>
@@ -336,6 +475,11 @@ const InteractiveMap = ({
           <div className="text-xs text-gray-500 mt-1">
             {buses.length} buses • {stops.length} stops
           </div>
+          {showTraffic && (
+            <div className="text-xs text-gray-500">
+              Traffic: {trafficData.filter(t => t.severity === 'heavy').length} heavy spots
+            </div>
+          )}
         </div>
       </div>
     </div>

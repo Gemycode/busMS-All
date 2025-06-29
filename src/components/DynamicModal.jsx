@@ -7,7 +7,7 @@ const FIELD_TYPES = {
   Email: "email",
 };
 
-const DynamicModal = ({ isOpen, onClose, onSubmit, schema, title }) => {
+const DynamicModal = ({ isOpen, onClose, onSubmit, schema, title, initialData }) => {
   const [form, setForm] = React.useState({});
   const [filePreviews, setFilePreviews] = React.useState({});
 
@@ -15,12 +15,20 @@ const DynamicModal = ({ isOpen, onClose, onSubmit, schema, title }) => {
     if (isOpen) {
       const initial = {};
       Object.keys(schema).forEach((key) => {
-        initial[key] = "";
+        if (initialData && initialData[key] !== undefined) {
+          if (Array.isArray(initialData[key])) {
+            initial[key] = initialData[key].join(", ");
+          } else {
+            initial[key] = initialData[key];
+          }
+        } else {
+          initial[key] = "";
+        }
       });
       setForm(initial);
       setFilePreviews({});
     }
-  }, [isOpen, schema]);
+  }, [isOpen, schema, initialData]);
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;

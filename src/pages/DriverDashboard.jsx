@@ -1,439 +1,427 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Link } from "react-router-dom"
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import LiveTrackingMap from "../components/LiveTrackingMap"
 
 const DriverDashboard = () => {
-  const [currentRoute, setCurrentRoute] = useState(null)
-  const [todaySchedule, setTodaySchedule] = useState([])
-  const [vehicleStatus, setVehicleStatus] = useState(null)
-  const [messages, setMessages] = useState([])
-  const [isOnDuty, setIsOnDuty] = useState(false)
+  const [currentTrip, setCurrentTrip] = useState(null);
+  const [isOnDuty, setIsOnDuty] = useState(false);
+  const [location, setLocation] = useState({ lat: 24.7136, lng: 46.6753 }); // Riyadh coordinates
+  const [passengers, setPassengers] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [selectedRoute, setSelectedRoute] = useState(null);
+
+  // Dummy data for demonstration
+  const assignedRoutes = [
+    {
+      id: 1,
+      name: "Route A - School Zone",
+      startLocation: "Al Olaya District",
+      endLocation: "King Fahd School",
+      estimatedTime: "45 min",
+      passengers: 12,
+      status: "active",
+      schedule: "07:30 AM - 08:15 AM"
+    },
+    {
+      id: 2,
+      name: "Route B - Residential Area",
+      startLocation: "Al Malaz District",
+      endLocation: "Al Riyadh School",
+      estimatedTime: "35 min",
+      passengers: 8,
+      status: "pending",
+      schedule: "02:30 PM - 03:05 PM"
+    }
+  ];
+
+  const dummyPassengers = [
+    { id: 1, name: "Ahmed Al-Rashid", grade: "5th Grade", pickupTime: "07:30 AM", status: "onboard" },
+    { id: 2, name: "Fatima Al-Zahra", grade: "3rd Grade", pickupTime: "07:35 AM", status: "waiting" },
+    { id: 3, name: "Omar Al-Sayed", grade: "6th Grade", pickupTime: "07:40 AM", status: "onboard" },
+    { id: 4, name: "Aisha Al-Mansour", grade: "4th Grade", pickupTime: "07:45 AM", status: "waiting" }
+  ];
+
+  const dummyNotifications = [
+    { id: 1, message: "New passenger added to Route A", time: "2 min ago", type: "info" },
+    { id: 2, message: "Traffic alert: Delay expected on King Fahd Road", time: "5 min ago", type: "warning" },
+    { id: 3, message: "Route B schedule updated", time: "10 min ago", type: "success" }
+  ];
 
   useEffect(() => {
-    // Simulate loading driver data
-    setTimeout(() => {
-      setCurrentRoute({
-        routeNumber: "42",
-        routeName: "Westside Express",
-        busNumber: "1042",
-        currentStop: 8,
-        totalStops: 15,
-        nextStop: "Maple & Oak Street",
-        nextStopETA: "7:15 AM",
-        passengersOnBoard: 28,
-        capacity: 72,
-        status: "on-time",
-      })
+    setPassengers(dummyPassengers);
+    setNotifications(dummyNotifications);
+  }, []);
 
-      setTodaySchedule([
-        {
-          id: 1,
-          type: "Morning Route",
-          time: "6:30 AM - 8:15 AM",
-          route: "Route #42 - Westside Express",
-          status: "completed",
-        },
-        {
-          id: 2,
-          type: "Break",
-          time: "8:15 AM - 2:45 PM",
-          route: "Off Duty",
-          status: "current",
-        },
-        {
-          id: 3,
-          type: "Afternoon Route",
-          time: "3:15 PM - 5:00 PM",
-          route: "Route #42 - Westside Express",
-          status: "upcoming",
-        },
-      ])
+  const startTrip = (routeId) => {
+    const route = assignedRoutes.find(r => r.id === routeId);
+    setCurrentTrip(route);
+    setIsOnDuty(true);
+    setSelectedRoute(route);
+  };
 
-      setVehicleStatus({
-        busNumber: "1042",
-        model: "2021 Thomas Saf-T-Liner",
-        fuelLevel: 78,
-        mileage: 45672,
-        lastMaintenance: "2023-04-15",
-        nextMaintenance: "2023-06-15",
-        issues: [],
-      })
+  const endTrip = () => {
+    setCurrentTrip(null);
+    setIsOnDuty(false);
+    setSelectedRoute(null);
+  };
 
-      setMessages([
-        {
-          id: 1,
-          from: "Dispatch",
-          message: "Route #42 is clear for afternoon run. No construction delays reported.",
-          time: "2:30 PM",
-          priority: "normal",
-          read: false,
-        },
-        {
-          id: 2,
-          from: "Manager Davis",
-          message: "Great job on maintaining schedule this morning. Keep up the excellent work!",
-          time: "9:15 AM",
-          priority: "normal",
-          read: true,
-        },
-        {
-          id: 3,
-          from: "Maintenance",
-          message: "Bus #1042 scheduled for routine inspection next Tuesday at 7:00 AM.",
-          time: "Yesterday",
-          priority: "high",
-          read: true,
-        },
-      ])
+  const updateLocation = () => {
+    // Simulate location update
+    const newLat = location.lat + (Math.random() - 0.5) * 0.01;
+    const newLng = location.lng + (Math.random() - 0.5) * 0.01;
+    setLocation({ lat: newLat, lng: newLng });
+  };
 
-      setIsOnDuty(true)
-    }, 1000)
-  }, [])
+  const markPassengerBoarded = (passengerId) => {
+    setPassengers(prev => 
+      prev.map(p => 
+        p.id === passengerId 
+          ? { ...p, status: 'onboard' }
+          : p
+      )
+    );
+  };
 
-  const getScheduleStatusColor = (status) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-100 text-green-800"
-      case "current":
-        return "bg-blue-100 text-blue-800"
-      case "upcoming":
-        return "bg-gray-100 text-gray-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
-
-  const toggleDutyStatus = () => {
-    setIsOnDuty(!isOnDuty)
-  }
+  const markPassengerDropped = (passengerId) => {
+    setPassengers(prev => 
+      prev.map(p => 
+        p.id === passengerId 
+          ? { ...p, status: 'dropped' }
+          : p
+      )
+    );
+  };
 
   return (
     <div className="font-sans text-gray-800 bg-gray-50 min-h-screen">
-      {/* Main Content */}
-      <main className="pt-20 pb-16">
-        {/* Dashboard Header */}
-        <section className="bg-gradient-to-r from-brand-dark-blue to-brand-medium-blue py-8">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-              <div>
-                <h1 className="text-3xl font-bold  mb-2">Driver Dashboard</h1>
-                <p >Welcome back, John Doe</p>
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center">
+              <div className="h-10 w-10 bg-brand-medium-blue rounded-full flex items-center justify-center mr-3">
+                <i className="fas fa-bus text-white"></i>
               </div>
-              <div className="mt-4 md:mt-0 flex space-x-3">
-                <button
-                  onClick={toggleDutyStatus}
-                  className={`px-4 py-2 font-medium rounded-md transition-all duration-200 ${
-                    isOnDuty ? "bg-red-500 text-white hover:bg-red-600" : "bg-green-500 text-white hover:bg-green-600"
-                  }`}
-                >
-                  <i className={`fas ${isOnDuty ? "fa-stop" : "fa-play"} mr-2`}></i>
-                  {isOnDuty ? "End Shift" : "Start Shift"}
-                </button>
-                <Link
-                  to="/driver/profile"
-                  className="px-4 py-2 bg-white bg-opacity-20 text-white font-medium rounded-md hover:bg-opacity-30 transition-all duration-200"
-                >
-                  <i className="fas fa-user mr-2"></i>Profile
-                </Link>
+              <h1 className="text-xl font-bold text-brand-dark-blue">Driver Dashboard</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center">
+                <div className={`h-3 w-3 rounded-full mr-2 ${isOnDuty ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <span className="text-sm font-medium">
+                  {isOnDuty ? 'On Duty' : 'Off Duty'}
+                </span>
+              </div>
+              <Link
+                to="/profile"
+                className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+              >
+                <i className="fas fa-user text-gray-600"></i>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center">
+              <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                <i className="fas fa-route text-brand-medium-blue text-xl"></i>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Active Routes</p>
+                <p className="text-2xl font-bold text-brand-dark-blue">
+                  {assignedRoutes.filter(r => r.status === 'active').length}
+                </p>
               </div>
             </div>
           </div>
-        </section>
 
-        {/* Dashboard Content */}
-        <section className="py-8">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Status Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Duty Status</p>
-                    <p className={`text-2xl font-bold ${isOnDuty ? "text-green-600" : "text-gray-600"}`}>
-                      {isOnDuty ? "On Duty" : "Off Duty"}
-                    </p>
-                    <p className="text-sm text-gray-500">Since 6:30 AM</p>
-                  </div>
-                  <div
-                    className={`h-12 w-12 rounded-full flex items-center justify-center ${
-                      isOnDuty ? "bg-green-100" : "bg-gray-100"
-                    }`}
-                  >
-                    <i className={`fas fa-circle text-xl ${isOnDuty ? "text-green-600" : "text-gray-600"}`}></i>
-                  </div>
-                </div>
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center">
+              <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                <i className="fas fa-users text-green-600 text-xl"></i>
               </div>
-
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Current Route</p>
-                    <p className="text-2xl font-bold text-gray-900">#{currentRoute?.routeNumber || "--"}</p>
-                    <p className="text-sm text-blue-600">
-                      <i className="fas fa-clock mr-1"></i>
-                      {currentRoute?.status || "Not assigned"}
-                    </p>
-                  </div>
-                  <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <i className="fas fa-route text-blue-600 text-xl"></i>
-                  </div>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Passengers</p>
+                <p className="text-2xl font-bold text-brand-dark-blue">
+                  {passengers.length}
+                </p>
               </div>
+            </div>
+          </div>
 
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Passengers</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {currentRoute?.passengersOnBoard || 0}/{currentRoute?.capacity || 0}
-                    </p>
-                    <p className="text-sm text-purple-600">
-                      <i className="fas fa-users mr-1"></i>Current load
-                    </p>
-                  </div>
-                  <div className="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center">
-                    <i className="fas fa-users text-purple-600 text-xl"></i>
-                  </div>
-                </div>
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center">
+              <div className="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-4">
+                <i className="fas fa-clock text-yellow-600 text-xl"></i>
               </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Current Time</p>
+                <p className="text-2xl font-bold text-brand-dark-blue">
+                  {new Date().toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: true 
+                  })}
+                </p>
+              </div>
+            </div>
+          </div>
 
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Vehicle Status</p>
-                    <p className="text-2xl font-bold text-green-600">Good</p>
-                    <p className="text-sm text-gray-500">Bus #{vehicleStatus?.busNumber}</p>
-                  </div>
-                  <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
-                    <i className="fas fa-bus text-green-600 text-xl"></i>
-                  </div>
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center">
+              <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                <i className="fas fa-bell text-purple-600 text-xl"></i>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Notifications</p>
+                <p className="text-2xl font-bold text-brand-dark-blue">
+                  {notifications.length}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Assigned Routes */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-lg shadow-md">
+              <div className="p-6 border-b border-gray-200">
+                <h2 className="text-lg font-bold text-brand-dark-blue">Assigned Routes</h2>
+                <p className="text-gray-600 text-sm">Manage your assigned routes and trips</p>
+              </div>
+              <div className="p-6">
+                <div className="space-y-4">
+                  {assignedRoutes.map((route) => (
+                    <div key={route.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h3 className="font-semibold text-brand-dark-blue">{route.name}</h3>
+                          <p className="text-sm text-gray-600">
+                            {route.startLocation} → {route.endLocation}
+                          </p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          route.status === 'active' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {route.status}
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <p className="text-xs text-gray-500">Schedule</p>
+                          <p className="text-sm font-medium">{route.schedule}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Duration</p>
+                          <p className="text-sm font-medium">{route.estimatedTime}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Passengers</p>
+                          <p className="text-sm font-medium">{route.passengers}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Status</p>
+                          <p className="text-sm font-medium capitalize">{route.status}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex space-x-3">
+                        {currentTrip?.id === route.id ? (
+                          <button
+                            onClick={endTrip}
+                            className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
+                          >
+                            <i className="fas fa-stop mr-2"></i>
+                            End Trip
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => startTrip(route.id)}
+                            disabled={currentTrip !== null}
+                            className="flex-1 bg-brand-medium-blue hover:bg-brand-dark-blue text-white py-2 px-4 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <i className="fas fa-play mr-2"></i>
+                            Start Trip
+                          </button>
+                        )}
+                        
+                        <Link
+                          to={`/map-view?route=${route.id}`}
+                          className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-md text-sm font-medium transition-colors text-center"
+                        >
+                          <i className="fas fa-map mr-2"></i>
+                          View Map
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Current Route Info */}
-              <div className="lg:col-span-2">
-                {currentRoute && (
-                  <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-                    <div className="flex justify-between items-center mb-6">
-                      <h2 className="text-xl font-bold text-brand-dark-blue">Current Route</h2>
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          currentRoute.status === "on-time"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {currentRoute.status.replace("-", " ")}
+            {/* Current Trip Status */}
+            {currentTrip && (
+              <div className="bg-white rounded-lg shadow-md mt-6">
+                <div className="p-6 border-b border-gray-200">
+                  <h2 className="text-lg font-bold text-brand-dark-blue">Current Trip</h2>
+                  <p className="text-gray-600 text-sm">Active trip details and controls</p>
+                </div>
+                <div className="p-6">
+                  <div className="bg-brand-beige rounded-lg p-4 mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-brand-dark-blue">{currentTrip.name}</h3>
+                      <span className="text-sm text-green-600 font-medium">
+                        <i className="fas fa-circle mr-1"></i>
+                        In Progress
                       </span>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                          Route #{currentRoute.routeNumber} - {currentRoute.routeName}
-                        </h3>
-                        <p className="text-gray-600 mb-4">Bus #{currentRoute.busNumber}</p>
-
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-500">Progress:</span>
-                            <span className="text-sm font-medium">
-                              {currentRoute.currentStop}/{currentRoute.totalStops} stops
-                            </span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-brand-medium-blue h-2 rounded-full"
-                              style={{ width: `${(currentRoute.currentStop / currentRoute.totalStops) * 100}%` }}
-                            ></div>
-                          </div>
-                        </div>
+                        <p className="text-gray-600">Started at:</p>
+                        <p className="font-medium">{new Date().toLocaleTimeString()}</p>
                       </div>
-
                       <div>
-                        <h4 className="text-md font-semibold text-gray-800 mb-3">Next Stop</h4>
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="font-medium text-gray-900">{currentRoute.nextStop}</p>
-                          <p className="text-sm text-gray-600">ETA: {currentRoute.nextStopETA}</p>
-                          <div className="mt-3 flex space-x-2">
-                            <button className="px-3 py-1 bg-brand-medium-blue text-white rounded-md text-sm hover:bg-opacity-90">
-                              <i className="fas fa-map-marker-alt mr-1"></i>Navigate
-                            </button>
-                            <button className="px-3 py-1 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300">
-                              <i className="fas fa-phone mr-1"></i>Call Dispatch
-                            </button>
-                          </div>
-                        </div>
+                        <p className="text-gray-600">Location:</p>
+                        <p className="font-medium">{location.lat.toFixed(4)}, {location.lng.toFixed(4)}</p>
                       </div>
                     </div>
-
-                    {/* Interactive Route Map */}
-                    <LiveTrackingMap busId="1042" userRole="driver" height="300px" />
                   </div>
-                )}
 
-                {/* Today's Schedule */}
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h2 className="text-xl font-bold text-brand-dark-blue mb-6">Today's Schedule</h2>
-                  <div className="space-y-4">
-                    {todaySchedule.map((item) => (
-                      <div key={item.id} className="flex items-center p-4 bg-gray-50 rounded-lg">
-                        <div className="flex-shrink-0 mr-4">
-                          <div
-                            className={`h-3 w-3 rounded-full ${
-                              item.status === "completed"
-                                ? "bg-green-500"
-                                : item.status === "current"
-                                  ? "bg-blue-500"
-                                  : "bg-gray-300"
-                            }`}
-                          ></div>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h3 className="font-medium text-gray-900">{item.type}</h3>
-                              <p className="text-sm text-gray-600">{item.route}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm font-medium text-gray-900">{item.time}</p>
-                              <span
-                                className={`px-2 py-1 rounded-full text-xs font-medium ${getScheduleStatusColor(item.status)}`}
-                              >
-                                {item.status}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={updateLocation}
+                      className="flex-1 bg-brand-medium-blue hover:bg-brand-dark-blue text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
+                    >
+                      <i className="fas fa-location-arrow mr-2"></i>
+                      Update Location
+                    </button>
+                    <button className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors">
+                      <i className="fas fa-phone mr-2"></i>
+                      Emergency Call
+                    </button>
                   </div>
                 </div>
               </div>
+            )}
+          </div>
 
-              {/* Right Sidebar */}
-              <div className="lg:col-span-1">
-                {/* Vehicle Status */}
-                {vehicleStatus && (
-                  <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-                    <h2 className="text-xl font-bold text-brand-dark-blue mb-6">Vehicle Status</h2>
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-500">Bus Information</h3>
-                        <p className="text-gray-900">#{vehicleStatus.busNumber}</p>
-                        <p className="text-sm text-gray-600">{vehicleStatus.model}</p>
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Passenger List */}
+            <div className="bg-white rounded-lg shadow-md">
+              <div className="p-4 border-b border-gray-200">
+                <h3 className="font-semibold text-brand-dark-blue">Passenger List</h3>
+                <p className="text-gray-600 text-xs">Manage passenger status</p>
+              </div>
+              <div className="p-4">
+                <div className="space-y-3">
+                  {passengers.map((passenger) => (
+                    <div key={passenger.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{passenger.name}</p>
+                        <p className="text-xs text-gray-600">{passenger.grade} • {passenger.pickupTime}</p>
                       </div>
-
-                      <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm text-gray-500">Fuel Level</span>
-                          <span className="text-sm font-medium">{vehicleStatus.fuelLevel}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full ${
-                              vehicleStatus.fuelLevel > 50
-                                ? "bg-green-500"
-                                : vehicleStatus.fuelLevel > 25
-                                  ? "bg-yellow-500"
-                                  : "bg-red-500"
-                            }`}
-                            style={{ width: `${vehicleStatus.fuelLevel}%` }}
-                          ></div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-500">Mileage</h3>
-                        <p className="text-gray-900">{vehicleStatus.mileage.toLocaleString()} miles</p>
-                      </div>
-
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-500">Maintenance</h3>
-                        <p className="text-sm text-gray-600">Last: {vehicleStatus.lastMaintenance}</p>
-                        <p className="text-sm text-gray-600">Next: {vehicleStatus.nextMaintenance}</p>
-                      </div>
-
-                      <button className="w-full px-3 py-2 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200 transition-colors duration-200">
-                        <i className="fas fa-exclamation-triangle mr-2"></i>Report Issue
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Messages */}
-                <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-brand-dark-blue">Messages</h2>
-                    <Link to="/driver/messages" className="text-sm text-brand-medium-blue hover:text-brand-dark-blue">
-                      View All
-                    </Link>
-                  </div>
-                  <div className="space-y-4">
-                    {messages.slice(0, 3).map((message) => (
-                      <div
-                        key={message.id}
-                        className={`p-3 rounded-lg border ${
-                          !message.read ? "bg-blue-50 border-blue-200" : "bg-gray-50 border-gray-200"
-                        }`}
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-sm font-medium text-gray-900">{message.from}</span>
-                          <span className="text-xs text-gray-500">{message.time}</span>
-                        </div>
-                        <p className="text-sm text-gray-700">{message.message}</p>
-                        {!message.read && (
-                          <div className="mt-2">
-                            <button className="text-xs text-brand-medium-blue hover:text-brand-dark-blue">
-                              Mark as read
-                            </button>
-                          </div>
+                      <div className="flex items-center space-x-2">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          passenger.status === 'onboard' 
+                            ? 'bg-green-100 text-green-800'
+                            : passenger.status === 'dropped'
+                            ? 'bg-gray-100 text-gray-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {passenger.status}
+                        </span>
+                        {passenger.status === 'waiting' && (
+                          <button
+                            onClick={() => markPassengerBoarded(passenger.id)}
+                            className="text-green-600 hover:text-green-800"
+                          >
+                            <i className="fas fa-check"></i>
+                          </button>
+                        )}
+                        {passenger.status === 'onboard' && (
+                          <button
+                            onClick={() => markPassengerDropped(passenger.id)}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            <i className="fas fa-user-minus"></i>
+                          </button>
                         )}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
+              </div>
+            </div>
 
-                {/* Quick Actions */}
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h2 className="text-xl font-bold text-brand-dark-blue mb-6">Quick Actions</h2>
-                  <div className="space-y-3">
-                    <button className="w-full flex items-center px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors duration-200">
-                      <i className="fas fa-play text-brand-medium-blue mr-3"></i>
-                      <span className="text-sm font-medium">Start Pre-Trip Inspection</span>
-                    </button>
-                    <button className="w-full flex items-center px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors duration-200">
-                      <i className="fas fa-clipboard-check text-brand-medium-blue mr-3"></i>
-                      <span className="text-sm font-medium">Log Attendance</span>
-                    </button>
-                    <button className="w-full flex items-center px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors duration-200">
-                      <i className="fas fa-gas-pump text-brand-medium-blue mr-3"></i>
-                      <span className="text-sm font-medium">Record Fuel</span>
-                    </button>
-                    <button className="w-full flex items-center px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors duration-200">
-                      <i className="fas fa-phone text-brand-medium-blue mr-3"></i>
-                      <span className="text-sm font-medium">Contact Dispatch</span>
-                    </button>
-                    <Link
-                      to="/driver/timesheet"
-                      className="w-full flex items-center px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors duration-200"
-                    >
-                      <i className="fas fa-clock text-brand-medium-blue mr-3"></i>
-                      <span className="text-sm font-medium">View Timesheet</span>
-                    </Link>
-                  </div>
+            {/* Notifications */}
+            <div className="bg-white rounded-lg shadow-md">
+              <div className="p-4 border-b border-gray-200">
+                <h3 className="font-semibold text-brand-dark-blue">Recent Notifications</h3>
+                <p className="text-gray-600 text-xs">Latest updates and alerts</p>
+              </div>
+              <div className="p-4">
+                <div className="space-y-3">
+                  {notifications.map((notification) => (
+                    <div key={notification.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                      <div className={`h-2 w-2 rounded-full mt-2 ${
+                        notification.type === 'warning' ? 'bg-yellow-500' :
+                        notification.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
+                      }`}></div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-800">{notification.message}</p>
+                        <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button className="w-full mt-3 text-sm text-brand-medium-blue hover:text-brand-dark-blue font-medium">
+                  View All Notifications
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white rounded-lg shadow-md">
+              <div className="p-4 border-b border-gray-200">
+                <h3 className="font-semibold text-brand-dark-blue">Quick Actions</h3>
+              </div>
+              <div className="p-4">
+                <div className="space-y-3">
+                  <button className="w-full text-left p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i className="fas fa-file-alt text-brand-medium-blue mr-3"></i>
+                    <span className="text-sm font-medium">Trip Report</span>
+                  </button>
+                  <button className="w-full text-left p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i className="fas fa-tools text-brand-medium-blue mr-3"></i>
+                    <span className="text-sm font-medium">Maintenance Request</span>
+                  </button>
+                  <button className="w-full text-left p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i className="fas fa-calendar text-brand-medium-blue mr-3"></i>
+                    <span className="text-sm font-medium">Schedule View</span>
+                  </button>
+                  <button className="w-full text-left p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i className="fas fa-cog text-brand-medium-blue mr-3"></i>
+                    <span className="text-sm font-medium">Settings</span>
+                  </button>
                 </div>
               </div>
             </div>
           </div>
-        </section>
+        </div>
       </main>
     </div>
-  )
-}
+  );
+};
 
-export default DriverDashboard
+export default DriverDashboard;
