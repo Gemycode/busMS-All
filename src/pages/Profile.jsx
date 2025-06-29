@@ -1,9 +1,27 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchProfile, updateProfile, changePassword } from '../redux/userSlice';
 
 const Profile = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { user, loading, error } = useSelector((state) => state.user);
+  
   const [profileMsg, setProfileMsg] = useState('');
+  const [passwordMsg, setPasswordMsg] = useState('');
+  const [editMode, setEditMode] = useState(false);
+  const [profileData, setProfileData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+  });
+  const [passwords, setPasswords] = useState({
+    oldPassword: '',
+    newPassword: '',
+    confirmNewPassword: '',
+  });
 
   useEffect(() => {
     dispatch(fetchProfile());
@@ -19,6 +37,11 @@ const Profile = () => {
       });
     }
   }, [user]);
+
+  useEffect(() => {
+    // Redirect to settings page where profile functionality is now located
+    navigate('/settings', { replace: true });
+  }, [navigate]);
 
   const handleChange = (e) => {
     setProfileData({ ...profileData, [e.target.name]: e.target.value });
@@ -58,9 +81,6 @@ const Profile = () => {
         }
       });
   };
-    // Redirect to settings page where profile functionality is now located
-    navigate('/settings', { replace: true });
-  }, [navigate]);
 
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
