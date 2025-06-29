@@ -32,7 +32,7 @@ const Header = () => {
           <div className="flex text-brand-beige items-center">
             <Link to="/" className="flex text-[#ead8b1] items-center">
               <i className="fas fa-bus text-2xl mr-2 animate-bounce"></i>
-              <span className="font-display  font-bold text-xl">BusTrack</span>
+              <span className="font-display font-bold text-xl">BusTrack</span>
             </Link>
           </div>
 
@@ -92,7 +92,7 @@ const Header = () => {
             {user && <NotificationBell />}
 
             {/* User Info or Sign In */}
-            {!user ? (
+            {user ? (
               <div className="flex items-center space-x-3">
                 <img
                   src={user.image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.firstName || 'User')}
@@ -121,10 +121,14 @@ const Header = () => {
                   onClick={() => dispatch(logout())}
                   className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 font-bold"
                 >
-                  تسجيل الدخول
+                  Logout
                 </button>
-              </div>)
-            :<div>negm</div>}
+              </div>
+            ) : (
+              <Link to="/login" className="px-3 py-1 bg-brand-beige text-brand-dark-blue rounded hover:bg-opacity-80 font-bold">
+                Sign In
+              </Link>
+            )}
           </nav>
 
           {/* Mobile menu button */}
@@ -196,13 +200,13 @@ const Header = () => {
                   className="block px-3 py-2 bg-brand-beige text-brand-dark-blue font-bold rounded-md mt-4"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  الملف الشخصي
+                  Profile
                 </Link>
                 <button
                   onClick={() => { dispatch(logout()); setMobileMenuOpen(false); }}
                   className="block w-full text-left px-3 py-2 text-red-600 font-bold rounded-md mt-2 hover:bg-red-100"
                 >
-                  تسجيل الخروج
+                  Logout
                 </button>
               </>
             ) : (
@@ -211,7 +215,7 @@ const Header = () => {
                 className="block px-3 py-2 bg-brand-beige text-brand-dark-blue font-bold rounded-md mt-4"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                تسجيل الدخول
+                Sign In
               </Link>
             )}
             
@@ -252,14 +256,6 @@ const Header = () => {
                 Attendance Management
               </Link>
             )}
-            
-            <Link
-              to="/login"
-              className="block px-3 py-2 bg-brand-beige text-brand-dark-blue font-bold rounded-md mt-4"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Sign In
-            </Link>
 
             {/* Mobile Language Selector */}
             <div className="px-3 py-2">

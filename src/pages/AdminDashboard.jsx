@@ -7,6 +7,7 @@ import DynamicModal from "../components/DynamicModal"
 import { userSchema, busSchema, routeSchema } from "../components/schemas"
 import { fetchBuses, updateBus, deleteBus, clearMessage as clearBusMessage, createBus } from "../redux/busSlice"
 import { fetchRoutes, createRoute, updateRoute, deleteRoute, clearMessage as clearRouteMessage } from "../redux/routesSlice"
+import { fetchAllUsers } from "../redux/userSlice"
 import dayjs from "dayjs"
 import { fetchAttendanceStats } from "../redux/attendanceSlice"
 
@@ -15,6 +16,7 @@ const AdminDashboard = () => {
   const { stats: attendanceStats } = useSelector(state => state.attendance);
   const { buses, loading: busesLoading, error: busesError, message: busMsg } = useSelector((state) => state.buses);
   const { routes, loading: routesLoading, error: routesError, message: routeMsg } = useSelector((state) => state.routes);
+  const { allUsers, loading: usersLoading } = useSelector((state) => state.user);
   
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -33,7 +35,19 @@ const AdminDashboard = () => {
   const [showEditBusModal, setShowEditBusModal] = useState(false)
   const [editingBus, setEditingBus] = useState(null)
 
+  // Bus creation form state
+  const [busFormData, setBusFormData] = useState({
+    BusNumber: '',
+    capacity: '',
+    status: 'active',
+    assigned_driver_id: '',
+    route_id: ''
+  })
+
   const previousRoutesCount = routes?.filter(route => dayjs(route.createdAt).isBefore(dayjs().subtract(1, 'day'))).length ?? 0;
+
+  // Get drivers from allUsers
+  const drivers = allUsers?.filter(user => user.role === 'driver') || [];
 
   // Update stats when routes or buses change
   useEffect(() => {
@@ -67,6 +81,7 @@ const AdminDashboard = () => {
     dispatch(fetchAttendanceStats());
     dispatch(fetchBuses());
     dispatch(fetchRoutes());
+    dispatch(fetchAllUsers());
     // Simulate loading dashboard data
     setTimeout(() => {
       setStats(prevStats => ({
@@ -599,33 +614,152 @@ const AdminDashboard = () => {
         schema={userSchema}
         title="Add New User"
       />
-      <DynamicModal
-        isOpen={showBusModal}
-        onClose={() => setShowBusModal(false)}
-        onSubmit={async (data) => {
-          try {
-            console.log("Form data received:", data);
-            const payload = {
-              BusNumber: data.BusNumber,
-              capacity: parseInt(data.capacity),
-              status: data.status,
-              assigned_driver_id: data.assigned_driver_id || null,
-              route_id: data.route_id || null,
-            };
-            console.log("Payload being sent:", payload);
-            const result = await dispatch(createBus(payload));
-            console.log("Create bus result:", result);
-            if (!result.error) {
-              setShowBusModal(false);
-            }
-          } catch (err) {
-            console.error("Bus creation error:", err);
-            alert("Error creating bus: " + (err.message || "Unknown error"));
-          }
-        }}
-        schema={busSchema}
-        title="Add New Bus"
-      />
+      
+      {/* Custom Bus Modal with Dropdowns */}
+      {showBusModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Add New Bus</h2>
+              <button
+                onClick={() => setShowBusModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                const payload = {
+                  BusNumber: busFormData.BusNumber,
+                  capacity: parseInt(busFormData.capacity),
+                  status: busFormData.status,
+                  assigned_driver_id: busFormData.assigned_driver_id || null,
+                  route_id: busFormData.route_id || null,
+                };
+                console.log("Payload being sent:", payload);
+                const result = await dispatch(createBus(payload));
+                console.log("Create bus result:", result);
+                if (!result.error) {
+                  setShowBusModal(false);
+                  setBusFormData({
+                    BusNumber: '',
+                    capacity: '',
+                    status: 'active',
+                    assigned_driver_id: '',
+                    route_id: ''
+                  });
+                }
+              } catch (err) {
+                console.error("Bus creation error:", err);
+                alert("Error creating bus: " + (err.message || "Unknown error"));
+              }
+            }}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Bus Number *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={busFormData.BusNumber}
+                    onChange={(e) => setBusFormData(prev => ({ ...prev, BusNumber: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter bus number"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Capacity *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={busFormData.capacity}
+                    onChange={(e) => setBusFormData(prev => ({ ...prev, capacity: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter capacity"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status *
+                  </label>
+                  <select
+                    required
+                    value={busFormData.status}
+                    onChange={(e) => setBusFormData(prev => ({ ...prev, status: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="active">Active</option>
+                    <option value="Maintenance">Maintenance</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Assigned Driver
+                  </label>
+                  <select
+                    value={busFormData.assigned_driver_id}
+                    onChange={(e) => setBusFormData(prev => ({ ...prev, assigned_driver_id: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a driver (optional)</option>
+                    {drivers.map(driver => (
+                      <option key={driver._id} value={driver._id}>
+                        {driver.firstName} {driver.lastName} - {driver.licenseNumber || 'No License'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Assigned Route
+                  </label>
+                  <select
+                    value={busFormData.route_id}
+                    onChange={(e) => setBusFormData(prev => ({ ...prev, route_id: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a route (optional)</option>
+                    {routes.map(route => (
+                      <option key={route._id} value={route._id}>
+                        {route.name} - {route.start_point} to {route.end_point}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowBusModal(false)}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Create Bus
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      
       <DynamicModal
         isOpen={showRouteModal}
         onClose={() => { setShowRouteModal(false); }}

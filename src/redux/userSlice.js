@@ -61,6 +61,19 @@ export const fetchProfile = createAsyncThunk(
   }
 );
 
+// Fetch all users (for admin purposes)
+export const fetchAllUsers = createAsyncThunk(
+  'user/fetchAllUsers',
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await api.get('/users/');
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Failed to fetch users');
+    }
+  }
+);
+
 // Update current user profile
 export const updateProfile = createAsyncThunk(
   'user/updateProfile',
@@ -90,6 +103,7 @@ export const changePassword = createAsyncThunk(
 const initialState = {
   user: JSON.parse(localStorage.getItem('user')) || null,
   token: localStorage.getItem('token') || null,
+  allUsers: [],
   loading: false,
   error: null,
 };
@@ -143,6 +157,18 @@ const userSlice = createSlice({
         localStorage.setItem('user', JSON.stringify(action.payload.user));
       })
       .addCase(loginUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchAllUsers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAllUsers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.allUsers = action.payload;
+      })
+      .addCase(fetchAllUsers.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

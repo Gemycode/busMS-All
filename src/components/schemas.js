@@ -26,8 +26,8 @@ export const busSchema = {
     options: ["active", "Maintenance", "inactive"],
     default: "active",
   },
-  assigned_driver_id: { type: "text", label: "Assigned Driver ID" },
-  route_id: { type: "text", label: "Route ID" },
+  // Note: assigned_driver_id and route_id will be handled separately with dropdowns
+  // since they require fetching data from the backend
 };
 
 // Route schema for DynamicModal usage
