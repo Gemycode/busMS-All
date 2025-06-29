@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useDispatch, useSelector } from "react-redux"
 import { Link } from "react-router-dom"
 import DynamicModal from "../components/DynamicModal"
 import { userSchema, busSchema, routeSchema } from "../components/schemas"
@@ -8,8 +9,14 @@ import { useSelector, useDispatch } from "react-redux"
 import { fetchBuses, updateBus, deleteBus, clearMessage as clearBusMessage } from "../redux/busSlice"
 import { fetchRoutes, createRoute, updateRoute, deleteRoute, clearMessage as clearRouteMessage } from "../redux/routesSlice"
 import dayjs from "dayjs"
+import { fetchAttendanceStats } from "../redux/attendanceSlice"
 
 const AdminDashboard = () => {
+  const dispatch = useDispatch();
+  const { stats: attendanceStats } = useSelector(state => state.attendance);
+  const { buses, loading: busesLoading, error: busesError, message: busMsg } = useSelector((state) => state.buses);
+  const { routes, loading: routesLoading, error: routesError, message: routeMsg } = useSelector((state) => state.routes);
+  
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeBuses: 0,
@@ -26,10 +33,6 @@ const AdminDashboard = () => {
   const [editingRoute, setEditingRoute] = useState(null)
   const [showEditBusModal, setShowEditBusModal] = useState(false)
   const [editingBus, setEditingBus] = useState(null)
-
-  const dispatch = useDispatch()
-  const { buses, loading: busesLoading, error: busesError, message: busMsg } = useSelector((state) => state.buses)
-  const { routes, loading: routesLoading, error: routesError, message: routeMsg } = useSelector((state) => state.routes)
 
   const previousRoutesCount = routes?.filter(route => dayjs(route.createdAt).isBefore(dayjs().subtract(1, 'day'))).length ?? 0;
 
@@ -62,9 +65,9 @@ const AdminDashboard = () => {
   }, [busMsg, dispatch])
 
   useEffect(() => {
-    dispatch(fetchBuses())
-    dispatch(fetchRoutes())
-
+    dispatch(fetchAttendanceStats());
+    dispatch(fetchBuses());
+    dispatch(fetchRoutes());
     // Simulate loading dashboard data
     setTimeout(() => {
       setStats(prevStats => ({
@@ -72,7 +75,6 @@ const AdminDashboard = () => {
         totalUsers: 15847,
         systemUptime: 99.8,
       }))
-
       setRecentActivity([
         {
           id: 1,
@@ -128,6 +130,12 @@ const AdminDashboard = () => {
                   className="px-4 py-2 bg-brand-beige text-brand-dark-blue font-medium rounded-md hover:bg-opacity-90 transition-all duration-200"
                 >
                   <i className="fas fa-users mr-2"></i>Manage Users
+                </Link>
+                <Link
+                  to="/attendance"
+                  className="px-4 py-2 bg-orange-500 text-white font-medium rounded-md hover:bg-orange-600 transition-all duration-200"
+                >
+                  <i className="fas fa-clipboard-check mr-2"></i>Attendance
                 </Link>
                 <Link
                   to="/admin/settings"
@@ -198,14 +206,15 @@ const AdminDashboard = () => {
               <div className="bg-white rounded-lg shadow-md p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">System Uptime</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.systemUptime}%</p>
+                    <p className="text-sm font-medium text-gray-500">Attendance Rate</p>
+                    <p className="text-3xl font-bold text-gray-900">{attendanceStats?.attendanceRate || 0}%</p>
                     <p className="text-sm text-green-600">
-                      <i className="fas fa-check mr-1"></i>Excellent
+                      <i className="fas fa-clipboard-check mr-1"></i>
+                      {attendanceStats?.present || 0} present today
                     </p>
                   </div>
-                  <div className="h-12 w-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                    <i className="fas fa-server text-yellow-600 text-xl"></i>
+                  <div className="h-12 w-12 bg-orange-100 rounded-full flex items-center justify-center">
+                    <i className="fas fa-clipboard-check text-orange-600 text-xl"></i>
                   </div>
                 </div>
               </div>
@@ -246,6 +255,26 @@ const AdminDashboard = () => {
                     <div className="text-center p-4 bg-gray-50 rounded-lg">
                       <p className="text-2xl font-bold text-purple-600">45K</p>
                       <p className="text-sm text-gray-600">Students Transported</p>
+                    </div>
+                  </div>
+
+                  {/* Attendance Stats */}
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+                      <p className="text-2xl font-bold text-orange-600">{attendanceStats?.total || 0}</p>
+                      <p className="text-sm text-gray-600">Total Records</p>
+                    </div>
+                    <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                      <p className="text-2xl font-bold text-green-600">{attendanceStats?.present || 0}</p>
+                      <p className="text-sm text-gray-600">Present</p>
+                    </div>
+                    <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
+                      <p className="text-2xl font-bold text-red-600">{attendanceStats?.absent || 0}</p>
+                      <p className="text-sm text-gray-600">Absent</p>
+                    </div>
+                    <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-2xl font-bold text-blue-600">{attendanceStats?.students || 0}</p>
+                      <p className="text-sm text-gray-600">Students</p>
                     </div>
                   </div>
                 </div>

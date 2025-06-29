@@ -1,16 +1,36 @@
-"use client"
+"use client";
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import LiveTrackingMap from "../components/LiveTrackingMap"
+import { useDispatch, useSelector } from "react-redux";
+import { createAttendance, fetchUserAttendance, clearError, clearSuccess } from "../redux/attendanceSlice";
+import Toast from "../components/Toast";
 
 const DriverDashboard = () => {
+  const dispatch = useDispatch();
+  const { user } = useSelector(state => state.user);
+  const { userAttendances, loading, error, success } = useSelector(state => state.attendance);
+  
   const [currentTrip, setCurrentTrip] = useState(null);
   const [isOnDuty, setIsOnDuty] = useState(false);
   const [location, setLocation] = useState({ lat: 24.7136, lng: 46.6753 }); // Riyadh coordinates
   const [passengers, setPassengers] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [selectedRoute, setSelectedRoute] = useState(null);
+  const [currentRoute, setCurrentRoute] = useState(null);
+  const [todaySchedule, setTodaySchedule] = useState([]);
+  const [vehicleStatus, setVehicleStatus] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [attendanceData, setAttendanceData] = useState({
+    personId: '',
+    personType: 'Employee',
+    date: new Date().toISOString().split('T')[0],
+    status: 'present',
+    boardingTime: '',
+    deboardingTime: ''
+  });
 
   // Dummy data for demonstration
   const assignedRoutes = [
@@ -52,7 +72,21 @@ const DriverDashboard = () => {
   useEffect(() => {
     setPassengers(dummyPassengers);
     setNotifications(dummyNotifications);
-  }, []);
+    // Set user ID for attendance
+    if (user?._id) {
+      setAttendanceData(prev => ({ ...prev, personId: user._id }));
+      dispatch(fetchUserAttendance({ userId: user._id }));
+    }
+  }, [user, dispatch]);
+
+  useEffect(() => {
+    if (success) {
+      setTimeout(() => dispatch(clearSuccess()), 3000);
+    }
+    if (error) {
+      setTimeout(() => dispatch(clearError()), 5000);
+    }
+  }, [success, error, dispatch]);
 
   const startTrip = (routeId) => {
     const route = assignedRoutes.find(r => r.id === routeId);
@@ -93,6 +127,55 @@ const DriverDashboard = () => {
       )
     );
   };
+
+  const getScheduleStatusColor = (status) => {
+    switch (status) {
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "current":
+        return "bg-blue-100 text-blue-800";
+      case "upcoming":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const toggleDutyStatus = () => {
+    setIsOnDuty(!isOnDuty);
+  };
+
+  // Attendance functions
+  const handleLogAttendance = () => {
+    setShowAttendanceModal(true);
+  };
+
+  const handleAttendanceSubmit = (e) => {
+    e.preventDefault();
+    const currentTime = new Date().toLocaleTimeString('en-US', { 
+      hour12: false, 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+    
+    const submitData = {
+      ...attendanceData,
+      boardingTime: attendanceData.status === 'present' ? currentTime : '',
+      deboardingTime: attendanceData.status === 'absent' ? currentTime : ''
+    };
+    
+    dispatch(createAttendance(submitData));
+    setShowAttendanceModal(false);
+  };
+
+  const getTodayAttendance = () => {
+    const today = new Date().toISOString().split('T')[0];
+    return userAttendances.find(att => 
+      new Date(att.date).toISOString().split('T')[0] === today
+    );
+  };
+
+  const todayAttendance = getTodayAttendance();
 
   return (
     <div className="font-sans text-gray-800 bg-gray-50 min-h-screen">
@@ -420,6 +503,70 @@ const DriverDashboard = () => {
           </div>
         </div>
       </main>
+
+      {/* Attendance Modal */}
+      {showAttendanceModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Log Attendance
+              </h3>
+              
+              <form onSubmit={handleAttendanceSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={attendanceData.date}
+                    onChange={(e) => setAttendanceData({...attendanceData, date: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={attendanceData.status}
+                    onChange={(e) => setAttendanceData({...attendanceData, status: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="present">Present</option>
+                    <option value="absent">Absent</option>
+                  </select>
+                </div>
+                
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {loading ? 'Logging...' : 'Log Attendance'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAttendanceModal(false)}
+                    className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Messages */}
+      {error && <Toast message={error} type="error" />}
+      {success && <Toast message={success} type="success" />}
     </div>
   );
 };
