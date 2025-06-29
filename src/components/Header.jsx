@@ -92,8 +92,7 @@ const Header = () => {
             {user && <NotificationBell />}
 
             {/* User Info or Sign In */}
-<<<<<<< HEAD
-            {user ? (
+            {!user ? (
               <div className="flex items-center space-x-3">
                 <img
                   src={user.image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.firstName || 'User')}
@@ -121,57 +120,11 @@ const Header = () => {
                 <button
                   onClick={() => dispatch(logout())}
                   className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 font-bold"
-=======
-            <div className="flex items-center space-x-4">
-              {user ? (
-                <div className="relative" ref={userMenuRef}>
-                  <button
-                    onClick={() => setUserMenuOpen((open) => !open)}
-                    className="flex items-center space-x-2 focus:outline-none"
-                    aria-haspopup="true"
-                    aria-expanded={userMenuOpen}
-                  >
-                    <img
-                      src={user.image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.firstName || 'User')}
-                      alt="Profile"
-                      className="w-9 h-9 rounded-full object-cover border-2 border-brand-beige"
-                    />
-                    <span className="font-semibold text-brand-beige">{user.firstName} {user.lastName}</span>
-                  </button>
-                  {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg z-50 border">
-                      <div className="px-4 py-3 text-center border-b">
-                        <div className="font-bold text-gray-800">{user.firstName} {user.lastName}</div>
-                        <div className="text-sm text-gray-500">{user.email}</div>
-                      </div>
-                      <Link
-                        to="/profile"
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 text-brand-dark-blue hover:bg-gray-50 font-bold border-b"
-                        onClick={() => setUserMenuOpen(false)}
-                      >
-                        <i className="fas fa-user"></i>
-                        الملف الشخصي
-                      </Link>
-                      <button
-                        onClick={() => { dispatch(logout()); setUserMenuOpen(false); }}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 text-red-600 hover:bg-gray-50 font-bold"
-                      >
-                        <i className="fas fa-sign-out-alt"></i>
-                        تسجيل الخروج
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <Link
-                  to="/login"
-                  className="btn-ripple px-4 py-2 bg-brand-beige text-brand-dark-blue font-bold rounded-md hover:bg-opacity-90 transition-colors duration-200 transform hover:scale-105"
->>>>>>> ef3587ddbe32d985209ff45f30b87325998bb12f
                 >
                   تسجيل الدخول
-                </Link>
-              )}
-            </div>
+                </button>
+              </div>)
+            :<div>negm</div>}
           </nav>
 
           {/* Mobile menu button */}
@@ -261,7 +214,6 @@ const Header = () => {
                 تسجيل الدخول
               </Link>
             )}
-<<<<<<< HEAD
             
             {/* Role-based mobile navigation */}
             {user && user.role === 'admin' && (
@@ -309,8 +261,6 @@ const Header = () => {
               Sign In
             </Link>
 
-=======
->>>>>>> ef3587ddbe32d985209ff45f30b87325998bb12f
             {/* Mobile Language Selector */}
             <div className="px-3 py-2">
               <select className="w-full appearance-none bg-transparent border border-gray-600 rounded-md pl-3 pr-8 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-beige focus:border-brand-beige">

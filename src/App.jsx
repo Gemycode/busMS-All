@@ -26,14 +26,11 @@ import Settings from "./pages/Settings"
 import Help from "./pages/Help"
 import RouteGuard from './components/RouteGuard'
 import Profile from "./pages/Profile"
-<<<<<<< HEAD
 import BookingsPage from './pages/BookingsPage'
 import AdminBookings from './pages/AdminBookings'
 import BookingReports from './pages/BookingReports'
 import DriverReports from './pages/DriverReports'
-=======
 import AttendanceManagement from "./pages/AttendanceManagement"
->>>>>>> 92d6c3946e78da5e0ac35eb242d65edd094a8aca
 
 function App() {
   return (
@@ -84,12 +81,10 @@ function App() {
             <Profile />
           </RouteGuard>
         } />
-<<<<<<< HEAD
         <Route path="/bookings" element={<BookingsPage />} />
         <Route path="/admin/bookings" element={<AdminBookings />} />
         <Route path="/admin/booking-reports" element={<BookingReports />} />
         <Route path="/admin/driver-reports" element={<DriverReports />} />
-=======
         <Route path="/attendance" element={
           <RouteGuard allowedRoles={["admin", "manager"]}>
             <AttendanceManagement />
@@ -97,7 +92,6 @@ function App() {
         } />
         {/* Catch all route - redirect to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
->>>>>>> 92d6c3946e78da5e0ac35eb242d65edd094a8aca
       </Routes>
       <Footer />
     </div>

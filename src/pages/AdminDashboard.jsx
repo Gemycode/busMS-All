@@ -5,8 +5,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { Link } from "react-router-dom"
 import DynamicModal from "../components/DynamicModal"
 import { userSchema, busSchema, routeSchema } from "../components/schemas"
-import { useSelector, useDispatch } from "react-redux"
-import { fetchBuses, updateBus, deleteBus, clearMessage as clearBusMessage } from "../redux/busSlice"
+import { fetchBuses, updateBus, deleteBus, clearMessage as clearBusMessage, createBus } from "../redux/busSlice"
 import { fetchRoutes, createRoute, updateRoute, deleteRoute, clearMessage as clearRouteMessage } from "../redux/routesSlice"
 import dayjs from "dayjs"
 import { fetchAttendanceStats } from "../redux/attendanceSlice"
@@ -603,7 +602,27 @@ const AdminDashboard = () => {
       <DynamicModal
         isOpen={showBusModal}
         onClose={() => setShowBusModal(false)}
-        onSubmit={(data) => { setShowBusModal(false); console.log("Bus Data:", data); }}
+        onSubmit={async (data) => {
+          try {
+            console.log("Form data received:", data);
+            const payload = {
+              BusNumber: data.BusNumber,
+              capacity: parseInt(data.capacity),
+              status: data.status,
+              assigned_driver_id: data.assigned_driver_id || null,
+              route_id: data.route_id || null,
+            };
+            console.log("Payload being sent:", payload);
+            const result = await dispatch(createBus(payload));
+            console.log("Create bus result:", result);
+            if (!result.error) {
+              setShowBusModal(false);
+            }
+          } catch (err) {
+            console.error("Bus creation error:", err);
+            alert("Error creating bus: " + (err.message || "Unknown error"));
+          }
+        }}
         schema={busSchema}
         title="Add New Bus"
       />
