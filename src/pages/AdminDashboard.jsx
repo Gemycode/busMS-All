@@ -13,10 +13,10 @@ import { fetchAttendanceStats } from "../redux/attendanceSlice"
 
 const AdminDashboard = () => {
   const dispatch = useDispatch();
-  const { stats: attendanceStats } = useSelector(state => state.attendance);
-  const { buses, loading: busesLoading, error: busesError, message: busMsg } = useSelector((state) => state.buses);
-  const { routes, loading: routesLoading, error: routesError, message: routeMsg } = useSelector((state) => state.routes);
-  const { allUsers, loading: usersLoading } = useSelector((state) => state.user);
+  const { stats: attendanceStats } = useSelector(state => state.attendance || {});
+  const { buses, loading: busesLoading, error: busesError, message: busMsg } = useSelector((state) => state.buses || {});
+  const { routes, loading: routesLoading, error: routesError, message: routeMsg } = useSelector((state) => state.routes || {});
+  const { allUsers, loading: usersLoading } = useSelector((state) => state.user || {});
   
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -412,7 +412,7 @@ const AdminDashboard = () => {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {buses.map((bus) => (
+                          {(buses || []).map((bus) => (
                             <tr key={bus._id}>
                               <td className="px-6 py-4 whitespace-nowrap">{bus.BusNumber}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{bus.capacity}</td>
@@ -463,7 +463,7 @@ const AdminDashboard = () => {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {routes.map((route) => (
+                          {(routes || []).map((route) => (
                             <tr key={route._id}>
                               <td className="px-6 py-4 whitespace-nowrap">{route.name}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{route.start_point}</td>

@@ -10,6 +10,15 @@ const Settings = () => {
   const user = useSelector((state) => state.user.user)
   const { loading, error } = useSelector((state) => state.user)
   
+  // Guard: Show loading if user data is not ready
+  if (!user) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-lg text-gray-600">جاري تحميل البيانات أو لم يتم تسجيل الدخول...</p>
+      </div>
+    );
+  }
+
   const [settings, setSettings] = useState({
     notifications: {
       email: true,
@@ -410,14 +419,14 @@ const Settings = () => {
                           )}
                         </div>
                         <h2 className="text-2xl font-bold mt-4 mb-1 flex items-center gap-2">
-                          {profileData.firstName} {profileData.lastName}
+                          {profileData.firstName || ''} {profileData.lastName || ''}
                           {profileData.role && (
                             <span className="text-xs bg-brand-medium-blue text-white px-2 py-1 rounded ml-2 capitalize">
-                              <i className="fas fa-user-shield mr-1"></i>{profileData.role}
+                              <i className="fas fa-user-shield mr-1"></i>{profileData.role || ''}
                             </span>
                           )}
                         </h2>
-                        <p className="text-gray-500">{profileData.email}</p>
+                        <p className="text-gray-500">{profileData.email || ''}</p>
                       </div>
 
                       {successMsg && <div className="bg-green-100 text-green-700 px-4 py-2 rounded mb-4 text-center">{successMsg}</div>}
@@ -434,7 +443,7 @@ const Settings = () => {
                               id="firstName"
                               name="firstName"
                               type="text"
-                              value={profileData.firstName}
+                              value={profileData.firstName || ''}
                               onChange={handleProfileChange}
                               disabled={!editMode}
                               className="w-full border rounded px-3 py-2"
@@ -449,7 +458,7 @@ const Settings = () => {
                               id="lastName"
                               name="lastName"
                               type="text"
-                              value={profileData.lastName}
+                              value={profileData.lastName || ''}
                               onChange={handleProfileChange}
                               disabled={!editMode}
                               className="w-full border rounded px-3 py-2"
@@ -464,7 +473,7 @@ const Settings = () => {
                               id="email"
                               name="email"
                               type="email"
-                              value={profileData.email}
+                              value={profileData.email || ''}
                               onChange={handleProfileChange}
                               disabled
                               className="w-full border rounded px-3 py-2 bg-gray-100"
@@ -479,7 +488,7 @@ const Settings = () => {
                               id="phone"
                               name="phone"
                               type="text"
-                              value={profileData.phone}
+                              value={profileData.phone || ''}
                               onChange={handleProfileChange}
                               disabled={!editMode}
                               className="w-full border rounded px-3 py-2"

@@ -54,19 +54,19 @@ function App() {
           // </RouteGuard>
         } />
         <Route path="/admin-dashboard" element={
-          <RouteGuard allowedRoles={["admin"]}>
+          <RouteGuard allowedRoles={["admin", "manager"]}>
             <AdminDashboard />
           </RouteGuard>
         } />
         <Route path="/manager-dashboard" element={
-          <RouteGuard allowedRoles={["manager"]}>
+          <RouteGuard allowedRoles={["admin", "manager"]}>
             <ManagerDashboard />
           </RouteGuard>
         } />
         <Route path="/driver-dashboard" element={
-          // <RouteGuard allowedRoles={["driver"]}>
+          <RouteGuard allowedRoles={["driver"]}>
             <DriverDashboard />
-          // </RouteGuard>
+          </RouteGuard>
         } />
         <Route path="/dashboard/user" element={<UserDashboard />} />
         <Route path="/dashboard/parent" element={<ParentDashboard />} />
@@ -78,7 +78,7 @@ function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/help" element={<Help />} />
         <Route path="/profile" element={
-          <RouteGuard>
+          <RouteGuard allowedRoles={["admin", "manager", "driver", "parent"]}>
             <Profile />
           </RouteGuard>
         } />
