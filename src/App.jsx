@@ -32,6 +32,7 @@ import BookingReports from './pages/BookingReports'
 import DriverReports from './pages/DriverReports'
 import AttendanceManagement from "./pages/AttendanceManagement"
 
+
 function App() {
   return (
     <div className="min-h-screen bg-gray-50">
@@ -48,9 +49,9 @@ function App() {
         <Route path="/login-admin" element={<AdminLogin />} />
         <Route path="/driver-profile" element={<DriverProfile />} />
         <Route path="/parent-profile" element={
-          <RouteGuard allowedRoles={["parent"]}>
+          // <RouteGuard allowedRoles={["parent"]}>
             <ParentProfile />
-          </RouteGuard>
+          // </RouteGuard>
         } />
         <Route path="/admin-dashboard" element={
           <RouteGuard allowedRoles={["admin"]}>
