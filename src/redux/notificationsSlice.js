@@ -3,38 +3,12 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 // Async thunks for API calls
 export const fetchNotifications = createAsyncThunk(
   'notifications/fetchNotifications',
-  async (_, { rejectWithValue }) => {
+  async (userId, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      const response = await new Promise(resolve => 
-        setTimeout(() => resolve({
-          data: [
-            {
-              id: 1,
-              title: "Bus Arrival",
-              message: "Your bus will arrive in 5 minutes",
-              type: "arrival",
-              time: "2 min ago",
-              date: "2024-01-15",
-              isRead: false,
-              route: "Route A - School Zone",
-              priority: "high"
-            },
-            {
-              id: 2,
-              title: "Booking Confirmed",
-              message: "Your booking for tomorrow has been confirmed",
-              type: "booking",
-              time: "10 min ago",
-              date: "2024-01-15",
-              isRead: false,
-              route: "Route B - Residential Area",
-              priority: "medium"
-            }
-          ]
-        }), 1000)
-      );
-      return response.data;
+      const response = await fetch(`/api/notifications/${userId}`);
+      if (!response.ok) throw new Error('Failed to fetch notifications');
+      const data = await response.json();
+      return data;
     } catch (error) {
       return rejectWithValue(error.message);
     }

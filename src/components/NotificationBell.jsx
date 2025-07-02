@@ -1,13 +1,14 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const NotificationBell = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const navigate = useNavigate();
 
   // Dummy notifications data
   const dummyNotifications = [
@@ -113,6 +114,16 @@ const NotificationBell = () => {
     }
   };
 
+  // Handle notification click: mark as read and redirect to map-view with busId/routeId if present
+  const handleNotificationClick = (notification) => {
+    markAsRead(notification.id);
+    if (notification.busId) {
+      navigate(`/map-view?busId=${notification.busId}`);
+    } else if (notification.routeId) {
+      navigate(`/map-view?routeId=${notification.routeId}`);
+    }
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Notification Bell Button */}
@@ -168,7 +179,7 @@ const NotificationBell = () => {
                     className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
                       !notification.isRead ? 'bg-blue-50' : ''
                     }`}
-                    onClick={() => markAsRead(notification.id)}
+                    onClick={() => handleNotificationClick(notification)}
                   >
                     <div className="flex items-start space-x-3">
                       <div className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${getNotificationColor(notification.type)}`}>

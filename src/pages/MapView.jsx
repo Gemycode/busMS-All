@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 import LiveTrackingMap from "../components/LiveTrackingMap"
 import TrackingTestPanel from "../components/TrackingTestPanel"
 
@@ -23,6 +23,12 @@ const MapView = () => {
     { id: "1087", name: "Bus #1087" },
     { id: "1156", name: "Bus #1156" },
   ]
+
+  // Read busId and routeId from query params for deep linking from notifications
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const busIdFromQuery = params.get('busId');
+  const routeIdFromQuery = params.get('routeId');
 
   return (
     <div className="font-sans text-gray-800 bg-gray-50 min-h-screen">
@@ -141,8 +147,8 @@ const MapView = () => {
 
             {/* Live Tracking Map */}
             <LiveTrackingMap
-              routeId={viewMode === "route" ? selectedRoute : null}
-              busId={viewMode === "bus" ? selectedBus : null}
+              routeId={routeIdFromQuery || (viewMode === "route" ? selectedRoute : null)}
+              busId={busIdFromQuery || (viewMode === "bus" ? selectedBus : null)}
               userRole="admin"
             />
 

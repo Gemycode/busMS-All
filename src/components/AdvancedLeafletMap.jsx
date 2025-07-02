@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import socketService from '../services/socketService';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchActiveBuses, updateBusLocation } from '../redux/trackingSlice';
+import notificationSound from '../assets/notification.mp3';
 
 // إصلاح مشكلة أيقونات Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -75,41 +76,6 @@ function CoverageArea({ center, radius = 5000 }) {
   );
 }
 
-// مكون لعرض محطات التوقف
-function BusStops({ stops }) {
-  return stops.map(stop => (
-    <Marker
-      key={stop.id}
-      position={[stop.lat, stop.lng]}
-      icon={createStopIcon(stop)}
-    >
-      <Popup>
-        <div className="stop-popup">
-          <h4>{stop.name}</h4>
-          <p>{stop.address}</p>
-          <p>النوع: {stop.type === 'school' ? 'مدرسة' : stop.type === 'pickup' ? 'نقطة تجميع' : 'نقطة إنزال'}</p>
-          <p>عدد الطلاب: {stop.studentCount}</p>
-          <p>الوصول التالي: {stop.nextArrival}</p>
-        </div>
-      </Popup>
-    </Marker>
-  ));
-}
-
-// إنشاء أيقونة محطة
-const createStopIcon = (stop) => {
-  return L.divIcon({
-    className: 'custom-stop-icon',
-    html: `
-      <div class="stop-marker ${stop.type}">
-        <div class="stop-name">${stop.name}</div>
-      </div>
-    `,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10]
-  });
-};
-
 const AdvancedLeafletMap = ({ 
   height = "600px", 
   showControls = true, 
@@ -118,10 +84,15 @@ const AdvancedLeafletMap = ({
   showStops = true,
   autoCenter = true,
   selectedBusId = null,
-  onBusClick = null 
+  selectedRouteId = null,
+  onBusClick = null,
+  buses: propBuses = null
 }) => {
   const dispatch = useDispatch();
-  const { buses, socketConnected, lastUpdate } = useSelector(state => state.tracking);
+  const reduxBuses = useSelector(state => state.tracking?.buses);
+  const buses = propBuses || reduxBuses || [];
+  const socketConnected = useSelector(state => state.tracking?.socketConnected);
+  const lastUpdate = useSelector(state => state.tracking?.lastUpdate);
   const [mapCenter, setMapCenter] = useState([24.0889, 32.8998]); // أسوان، مصر
   const [zoom, setZoom] = useState(12);
   const [mapType, setMapType] = useState('streets');
@@ -130,6 +101,7 @@ const AdvancedLeafletMap = ({
   const [availableBuses, setAvailableBuses] = useState([]);
   const mapRef = useRef(null);
   const [iconScale, setIconScale] = useState(1);
+  const audioRef = useRef(null);
 
   // مسارات واقعية مستخرجة من OpenStreetMap - Polylines حقيقية
   const routes = [
@@ -255,7 +227,6 @@ const AdvancedLeafletMap = ({
     const map = mapRef.current;
     const handleZoom = () => {
       const zoom = map._zoom || map.getZoom();
-      // مقياس الأيقونة مضبوط ليبقى واضحًا في كل الزوم
       setIconScale(Math.max(0.8, Math.min(1.2, 0.8 + (zoom - defaultZoom) * 0.12)));
     };
     map.on('zoom', handleZoom);
@@ -282,33 +253,22 @@ const AdvancedLeafletMap = ({
     });
   };
 
-  // تحديث دالة إنشاء أيقونة المحطة لتدعم التكبير
-  const createStopIcon = (stop) => {
-    const size = 20 * iconScale;
-    return L.divIcon({
-      className: 'custom-stop-icon',
-      html: `<div class="stop-marker ${stop.type}" style="width:${size}px; height:${size}px;"><div class="stop-name">${stop.name}</div></div>`,
-      iconSize: [size, size],
-      iconAnchor: [size/2, size/2]
-    });
-  };
-
   // تحسين popup الباص
   function BusPopup({ bus }) {
     return (
-      <div className="bus-popup" style={{minWidth:220, direction:'rtl'}}>
-        <div style={{display:'flex',alignItems:'center',marginBottom:8}}>
-          <span style={{fontSize:22,marginLeft:8}}>🚌</span>
-          <span style={{fontWeight:'bold',fontSize:16,color:'#2563EB'}}>{bus.number}</span>
+      <div className="bus-popup" style={{ minWidth: 220, direction: 'rtl' }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+          <span style={{ fontSize: 22, marginLeft: 8 }}>🚌</span>
+          <span style={{ fontWeight: 'bold', fontSize: 16, color: '#2563EB' }}>{bus.number}</span>
         </div>
-        <div style={{fontSize:13,marginBottom:4}}><b>المسار:</b> {bus.route}</div>
-        <div style={{fontSize:13,marginBottom:4}}><b>السائق:</b> {bus.driver}</div>
-        <div style={{fontSize:13,marginBottom:4}}><b>الحالة:</b> <span style={{color:bus.status==='active'?'#10B981':'#EF4444'}}>{bus.status==='active'?'نشط':'متوقف'}</span></div>
-        <div style={{fontSize:13,marginBottom:4}}><b>السرعة:</b> {Math.round(bus.speed)} كم/س</div>
-        <div style={{fontSize:13,marginBottom:4}}><b>الركاب:</b> {bus.passengers}/{bus.capacity}</div>
-        <div style={{fontSize:13,marginBottom:4}}><b>المحطة التالية:</b> {bus.nextStop}</div>
-        <div style={{fontSize:13,marginBottom:4}}><b>وقت الوصول:</b> {bus.eta}</div>
-        <div style={{fontSize:12,color:'#888'}}>آخر تحديث: {new Date(bus.lastUpdate).toLocaleTimeString('ar-EG')}</div>
+        <div style={{ fontSize: 13, marginBottom: 4 }}><b>المسار:</b> {bus.route}</div>
+        <div style={{ fontSize: 13, marginBottom: 4 }}><b>السائق:</b> {bus.driver}</div>
+        <div style={{ fontSize: 13, marginBottom: 4 }}><b>الحالة:</b> <span style={{ color: bus.status === 'active' ? '#10B981' : '#EF4444' }}>{bus.status === 'active' ? 'نشط' : 'متوقف'}</span></div>
+        <div style={{ fontSize: 13, marginBottom: 4 }}><b>السرعة:</b> {Math.round(bus.speed)} كم/س</div>
+        <div style={{ fontSize: 13, marginBottom: 4 }}><b>الركاب:</b> {bus.passengers}/{bus.capacity}</div>
+        <div style={{ fontSize: 13, marginBottom: 4 }}><b>المحطة التالية:</b> {bus.nextStop}</div>
+        <div style={{ fontSize: 13, marginBottom: 4 }}><b>وقت الوصول:</b> {bus.eta}</div>
+        <div style={{ fontSize: 12, color: '#888' }}>آخر تحديث: {new Date(bus.lastUpdate).toLocaleTimeString('ar-EG')}</div>
       </div>
     );
   }
@@ -907,150 +867,214 @@ const AdvancedLeafletMap = ({
 
   // تحسين زر التتبع ليكون احترافيًا
   const trackingBtnClass = isTracking ? 'btn btn-danger' : 'btn btn-success';
-  const trackingBtnIcon = isTracking ? '⏹️' : '🟢';
+  const trackingBtnIcon = isTracking ? '⏹' : '🟢';
   const trackingBtnText = isTracking ? 'إيقاف التتبع' : 'بدء التتبع';
 
-  return (
-    <div className="relative" style={{ height }}>
-      <MapContainer
-        center={mapCenter}
-        zoom={defaultZoom}
-        minZoom={minZoom}
-        maxZoom={maxZoom}
-        style={{ height: '100%', width: '100%' }}
-        ref={mapRef}
-      >
-        <TileLayer
-          url={getTileLayerUrl()}
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
-        
-        {/* تحديث الخريطة تلقائياً */}
-        <MapUpdater buses={availableBuses} selectedBusId={selectedBusId} isTracking={isTracking} />
-        
-        {/* عرض الحافلات المتاحة */}
-        {isTracking && availableBuses.map(bus => (
-          <Marker
-            key={bus.id}
-            position={[bus.lat, bus.lng]}
-            icon={createBusIcon(bus)}
-            eventHandlers={{
-              click: () => handleBusClick(bus)
-            }}
-          >
-            <Popup>
-              <BusPopup bus={bus} />
-            </Popup>
-          </Marker>
-        ))}
-        
-        {/* عرض المحطات */}
-        {showStops && <BusStops stops={stops} />}
-        
-        {/* عرض منطقة التغطية */}
-        {showCoverage && <CoverageArea center={mapCenter} />}
-      </MapContainer>
+  // --- Only one definition of createStopIcon should exist, keep the one below with iconScale dependency ---
+  const createStopIcon = (stop) => {
+    const size = 20 * iconScale;
+    return L.divIcon({
+      className: 'custom-stop-icon',
+      html: `<div class="stop-marker ${stop.type}" style="width:${size}px; height:${size}px;"><div class="stop-name">${stop.name}</div></div>`,
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2]
+    });
+  };
 
-      {/* أدوات التحكم */}
-      {showControls && (
-        <div className="map-controls">
-          <h4>خريطة أسوان - تتبع الحافلات</h4>
-          
-          {/* مؤشر الاتصال */}
-          <div className="status-indicator">
-            <div className={`status-dot ${socketConnected ? 'connected' : 'disconnected'}`}></div>
-            <span>{socketConnected ? 'متصل مباشر' : 'غير متصل'}</span>
+  // --- Only one definition of BusStops should exist, keep the one below ---
+  const BusStops = ({ stops }) => {
+    return stops.map(stop => (
+      <Marker
+        key={stop.id}
+        position={[stop.lat, stop.lng]}
+        icon={createStopIcon(stop)}
+      >
+        <Popup>
+          <div className="stop-popup">
+            <h4>{stop.name}</h4>
+            {stop.address && <p>{stop.address}</p>}
+            <p>النوع: {stop.type === 'school' ? 'مدرسة' : stop.type === 'pickup' ? 'نقطة تجميع' : 'نقطة إنزال'}</p>
+            {typeof stop.studentCount !== 'undefined' && <p>عدد الطلاب: {stop.studentCount}</p>}
+            {stop.nextArrival && <p>الوصول التالي: {stop.nextArrival}</p>}
           </div>
+        </Popup>
+      </Marker>
+    ));
+  };
+
+  // Play notification sound and show browser notification when buses appear after tracking starts
+  useEffect(() => {
+    if (isTracking && availableBuses.length > 0) {
+      // Browser notification
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        if (Notification.permission === 'granted') {
+          try {
+            new Notification('🚍 الباصات ظهرت على الخريطة!', {
+              body: 'تم بدء التتبع وظهور الباصات.',
+              icon: '/bus-icon.png'
+            });
+          } catch (e) {
+            // Ignore notification errors
+          }
+        } else if (Notification.permission !== 'denied') {
+          Notification.requestPermission();
+        }
+      }
+      // Play sound
+      if (audioRef.current) {
+        try {
+          audioRef.current.play();
+        } catch (e) {
+          // Ignore play errors (e.g., user gesture required)
+        }
+      }
+    }
+  }, [isTracking, availableBuses.length]);
+
+  return (
+    <>
+      <audio ref={audioRef} src={notificationSound} preload="auto" />
+      <div className="relative" style={{ height }}>
+        <MapContainer
+          center={mapCenter}
+          zoom={defaultZoom}
+          minZoom={minZoom}
+          maxZoom={maxZoom}
+          style={{ height: '100%', width: '100%' }}
+          ref={mapRef}
+        >
+          <TileLayer
+            url={getTileLayerUrl()}
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          />
           
-          {/* أزرار التتبع */}
-          <div className="tracking-controls">
-            <button 
-              className={trackingBtnClass}
-              onClick={isTracking ? stopTracking : startTracking}
+          {/* تحديث الخريطة تلقائياً */}
+          <MapUpdater buses={availableBuses} selectedBusId={selectedBusId} isTracking={isTracking} />
+          
+          {/* عرض الحافلات المتاحة */}
+          {isTracking && availableBuses.map(bus => (
+            <Marker
+              key={bus.id}
+              position={[bus.lat, bus.lng]}
+              icon={createBusIcon(bus)}
+              eventHandlers={{
+                click: () => handleBusClick(bus)
+              }}
             >
-              {trackingBtnIcon} {trackingBtnText}
-            </button>
-          </div>
+              <Popup>
+                <BusPopup bus={bus} />
+              </Popup>
+            </Marker>
+          ))}
           
-          {/* الباصات المتاحة */}
-          {isTracking && (
-            <div className="control-group">
-              <label>الباصات المتاحة:</label>
-              <div className="available-buses">
-                {availableBuses.map(bus => (
-                  <div 
-                    key={bus.id} 
-                    className={`bus-item ${bus.status}`}
-                    onClick={() => handleBusClick(bus)}
-                  >
-                    <div>
-                      <strong>{bus.number}</strong>
-                      <div style={{ fontSize: '10px', color: '#666' }}>{bus.route}</div>
-                    </div>
-                    <div style={{ textAlign: 'left' }}>
-                      <div style={{ fontSize: '10px' }}>{bus.status === 'active' ? 'نشط' : 'متوقف'}</div>
-                      <div style={{ fontSize: '10px', color: '#666' }}>{Math.round(bus.speed)} كم/س</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {/* عرض المحطات */}
+          {showStops && <BusStops stops={stops} />}
+          
+          {/* عرض منطقة التغطية */}
+          {showCoverage && <CoverageArea center={mapCenter} />}
+        </MapContainer>
+
+        {/* أدوات التحكم */}
+        {showControls && (
+          <div className="map-controls">
+            <h4>خريطة أسوان - تتبع الحافلات</h4>
+            
+            {/* مؤشر الاتصال */}
+            <div className={`status-indicator`}>
+              <div className={`status-dot ${socketConnected ? 'connected' : 'disconnected'}`}></div>
+              <span>{socketConnected ? 'متصل مباشر' : 'غير متصل'}</span>
             </div>
-          )}
-          
-          {/* نوع الخريطة */}
-          <div className="control-group">
-            <label>نوع الخريطة:</label>
-            <select 
-              value={mapType} 
-              onChange={(e) => changeMapType(e.target.value)}
-              style={{ width: '100%', fontSize: '12px' }}
-            >
-              <option value="streets">شوارع</option>
-              <option value="satellite">قمر صناعي</option>
-              <option value="terrain">طبوغرافي</option>
-              <option value="dark">داكن</option>
-            </select>
-          </div>
-          
-          {/* خيارات العرض */}
-          <div className="control-group">
-            <label>
-              <input 
-                type="checkbox" 
-                checked={showStops} 
-                onChange={(e) => setShowStops(e.target.checked)}
-              />
-              إظهار المحطات
-            </label>
-          </div>
-          
-          <div className="control-group">
-            <label>
-              <input 
-                type="checkbox" 
-                checked={showCoverage} 
-                onChange={(e) => setShowCoverage(e.target.checked)}
-              />
-              إظهار منطقة التغطية
-            </label>
-          </div>
-          
-          {/* إحصائيات سريعة */}
-          {isTracking && (
-            <div className="control-group">
-              <div style={{ fontSize: '11px', color: '#666', textAlign: 'center' }}>
-                <div>الباصات النشطة: {availableBuses.filter(b => b.status === 'active').length}</div>
-                <div>إجمالي الباصات: {availableBuses.length}</div>
-                {lastUpdate && (
-                  <div>آخر تحديث: {new Date(lastUpdate).toLocaleTimeString('ar-EG')}</div>
-                )}
-              </div>
+            
+            {/* أزرار التتبع */}
+            <div className="tracking-controls">
+              <button 
+                className={trackingBtnClass}
+                onClick={isTracking ? stopTracking : startTracking}
+              >
+                {trackingBtnIcon} {trackingBtnText}
+              </button>
             </div>
-          )}
-        </div>
-      )}
-    </div>
+            
+            {/* الباصات المتاحة */}
+            {isTracking && (
+              <div className="control-group">
+                <label>الباصات المتاحة:</label>
+                <div className="available-buses">
+                  {availableBuses.map(bus => (
+                    <div 
+                      key={bus.id} 
+                      className={`bus-item ${bus.status}`}
+                      onClick={() => handleBusClick(bus)}
+                    >
+                      <div>
+                        <strong>{bus.number}</strong>
+                        <div style={{ fontSize: '10px', color: '#666' }}>{bus.route}</div>
+                      </div>
+                      <div style={{ textAlign: 'left' }}>
+                        <div style={{ fontSize: '10px' }}>{bus.status === 'active' ? 'نشط' : 'متوقف'}</div>
+                        <div style={{ fontSize: '10px', color: '#666' }}>{Math.round(bus.speed)} كم/س</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* نوع الخريطة */}
+            <div className="control-group">
+              <label>نوع الخريطة:</label>
+              <select 
+                value={mapType} 
+                onChange={(e) => changeMapType(e.target.value)}
+                style={{ width: '100%', fontSize: '12px' }}
+              >
+                <option value="streets">شوارع</option>
+                <option value="satellite">قمر صناعي</option>
+                <option value="terrain">طبوغرافي</option>
+                <option value="dark">داكن</option>
+              </select>
+            </div>
+            
+            {/* خيارات العرض */}
+            <div className="control-group">
+              <label>
+                <input 
+                  type="checkbox" 
+                  checked={showStops} 
+                  onChange={(e) => setShowStops(e.target.checked)}
+                />
+                إظهار المحطات
+              </label>
+            </div>
+            
+            <div className="control-group">
+              <label>
+                <input 
+                  type="checkbox" 
+                  checked={showCoverage} 
+                  onChange={(e) => setShowCoverage(e.target.checked)}
+                />
+                إظهار منطقة التغطية
+              </label>
+            </div>
+            
+            {/* إحصائيات سريعة */}
+            {isTracking && (
+              <div className="control-group">
+                <div style={{ fontSize: '11px', color: '#666', textAlign: 'center' }}>
+                  <div>الباصات النشطة: {availableBuses.filter(b => b.status === 'active').length}</div>
+                  <div>إجمالي الباصات: {availableBuses.length}</div>
+                  {lastUpdate && (
+                    <div>آخر تحديث: {new Date(lastUpdate).toLocaleTimeString('ar-EG')}</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </>
   );
 };
 
-export default AdvancedLeafletMap; 
+export default AdvancedLeafletMap;

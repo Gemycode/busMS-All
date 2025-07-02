@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { useSelector, useDispatch } from 'react-redux';
-import { setSelectedBus, setLastUpdate } from '../redux/trackingSlice';
+import { setSelectedBus } from '../redux/trackingSlice';
 
 // مكون تحديث الخريطة
 function MapUpdater({ buses, selectedBusId, isTracking }) {
@@ -68,7 +68,7 @@ function AdvancedStats({ buses, isTracking }) {
         <div className="stat-item"><div className="stat-icon">⚡</div><div className="stat-value">{stats.avgSpeed} كم/س</div><div className="stat-label">متوسط السرعة</div></div>
         <div className="stat-item"><div className="stat-icon">👥</div><div className="stat-value">{stats.totalPassengers}</div><div className="stat-label">إجمالي الركاب</div></div>
         <div className="stat-item"><div className="stat-icon">🔋</div><div className="stat-value">{stats.avgBattery}%</div><div className="stat-label">متوسط البطارية</div></div>
-        <div className="stat-item"><div className="stat-icon">🗺️</div><div className="stat-value">{stats.coverageArea} كم²</div><div className="stat-label">منطقة التغطية</div></div>
+        <div className="stat-item"><div className="stat-icon">🗺</div><div className="stat-value">{stats.coverageArea} كم²</div><div className="stat-label">منطقة التغطية</div></div>
       </div>
     </div>
   );
@@ -81,7 +81,7 @@ function AdvancedControls({ isTracking, onStartTracking, onStopTracking, selecte
       <h3>🎮 تحكم متقدم</h3>
       <div className="control-section">
         <button className={`tracking-btn ${isTracking ? 'stop' : 'start'}`} onClick={isTracking ? onStopTracking : onStartTracking}>
-          {isTracking ? '⏹️ إيقاف التتبع' : '🟢 بدء التتبع'}
+          {isTracking ? '⏹ إيقاف التتبع' : '🟢 بدء التتبع'}
         </button>
       </div>
       <div className="control-section">
@@ -96,7 +96,7 @@ function AdvancedControls({ isTracking, onStartTracking, onStopTracking, selecte
       </div>
       <div className="control-section">
         <button className="tracking-btn export" onClick={onExport} style={{background:'#2563EB',color:'#fff'}}>
-          ⬇️ تصدير بيانات الحركة (CSV)
+          ⬇ تصدير بيانات الحركة (CSV)
         </button>
       </div>
       <div className="control-section">
@@ -109,7 +109,7 @@ function AdvancedControls({ isTracking, onStartTracking, onStopTracking, selecte
         </select>
       </div>
       <div className="control-section">
-        <label><input type="checkbox" checked={showCoverage} onChange={onToggleCoverage}/> 🗺️ إظهار منطقة التغطية</label>
+        <label><input type="checkbox" checked={showCoverage} onChange={onToggleCoverage}/> 🗺 إظهار منطقة التغطية</label>
         <label><input type="checkbox" checked={showHeatmap} onChange={onToggleHeatmap}/> 🔥 إظهار خريطة الحرارة</label>
       </div>
       {isTracking && (
@@ -281,7 +281,7 @@ const AdvancedLiveTracking = ({ height = "100vh", showControls = true, showStats
         {showMyLocation && currentLocation && (
           <Marker position={[currentLocation.lat, currentLocation.lng]} icon={L.divIcon({
             className: 'my-location-marker',
-            html: `<div style="width: 20px; height: 20px; background: #3B82F6; border: 3px solid white; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.3); position: relative;"><div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 8px; height: 8px; background: white; border-radius: 50%;"></div></div>`,
+            html: <div style="width: 20px; height: 20px; background: #3B82F6; border: 3px solid white; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.3); position: relative;"><div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 8px; height: 8px; background: white; border-radius: 50%;"></div></div>,
             iconSize: [20, 20], iconAnchor: [10, 10]
           })}>
             <Popup>
@@ -307,7 +307,7 @@ const AdvancedLiveTracking = ({ height = "100vh", showControls = true, showStats
           buses={animatedBuses}
           onToggleCoverage={() => setShowCoverageArea(!showCoverageArea)}
           showCoverage={showCoverageArea}
-          onToggleHeatmap={() => setShowHeatmap(!setShowHeatmap)}
+          onToggleHeatmap={() => setShowHeatmap(!showHeatmap)}
           showHeatmap={showHeatmap}
           onExport={handleExport}
           onShowMyLocation={handleShowMyLocation}
@@ -345,4 +345,4 @@ function exportBusesToCSV(buses) {
   document.body.removeChild(link);
 }
 
-export default AdvancedLiveTracking; 
+export default AdvancedLiveTracking;

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
@@ -10,6 +10,7 @@ const NotificationsPage = () => {
   const [typeFilter, setTypeFilter] = useState('all'); // all, arrival, booking, update, maintenance
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedNotifications, setSelectedNotifications] = useState([]);
+  const navigate = useNavigate();
 
   // Dummy notifications data
   const dummyNotifications = [
@@ -242,6 +243,16 @@ const NotificationsPage = () => {
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
+  // Handle notification click: mark as read and redirect to map-view with busId/routeId if present
+  const handleNotificationClick = (notification) => {
+    markAsRead(notification.id);
+    if (notification.busId) {
+      navigate(`/map-view?busId=${notification.busId}`);
+    } else if (notification.routeId) {
+      navigate(`/map-view?routeId=${notification.routeId}`);
+    }
+  };
+
   return (
     <div className="font-sans text-gray-800 bg-gray-50 min-h-screen">
       {/* Header */}
@@ -382,87 +393,80 @@ const NotificationsPage = () => {
                 {filteredNotifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`p-6 hover:bg-gray-50 transition-colors ${
-                      !notification.isRead ? 'bg-blue-50' : ''
-                    }`}
+                    className={`flex items-center space-x-3 p-4 rounded-lg shadow-sm mb-2 cursor-pointer transition-colors ${notification.isRead ? 'bg-gray-50' : 'bg-blue-50 hover:bg-blue-100'}`}
+                    onClick={() => handleNotificationClick(notification)}
                   >
-                    <div className="flex items-start space-x-4">
-                      {/* Checkbox */}
-                      <input
-                        type="checkbox"
-                        checked={selectedNotifications.includes(notification.id)}
-                        onChange={() => toggleSelection(notification.id)}
-                        className="mt-1 h-4 w-4 text-brand-medium-blue focus:ring-brand-medium-blue border-gray-300 rounded"
-                      />
-
-                      {/* Icon */}
-                      <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${getNotificationColor(notification.type)}`}>
-                        <i className={`${getNotificationIcon(notification.type)} text-lg`}></i>
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-1">
-                              <h3 className="text-lg font-medium text-gray-900">
-                                {notification.title}
-                              </h3>
-                              {!notification.isRead && (
-                                <span className="h-2 w-2 bg-blue-500 rounded-full"></span>
-                              )}
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(notification.priority)}`}>
-                                {notification.priority}
-                              </span>
-                            </div>
-                            <p className="text-gray-600 mb-2">
-                              {notification.message}
-                            </p>
-                            <div className="flex items-center space-x-4 text-sm text-gray-500">
-                              <span>
-                                <i className="fas fa-route mr-1"></i>
-                                {notification.route}
-                              </span>
-                              <span>
-                                <i className="fas fa-clock mr-1"></i>
-                                {notification.time}
-                              </span>
-                              <span>
-                                <i className="fas fa-calendar mr-1"></i>
-                                {notification.date}
-                              </span>
-                            </div>
+                    <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${getNotificationColor(notification.type)}`}>
+                      <i className={`${getNotificationIcon(notification.type)} text-lg`}></i>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <h3 className="text-lg font-medium text-gray-900">
+                              {notification.title}
+                            </h3>
+                            {!notification.isRead && (
+                              <span className="h-2 w-2 bg-blue-500 rounded-full"></span>
+                            )}
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(notification.priority)}`}>
+                              {notification.priority}
+                            </span>
+                          </div>
+                          <p className="text-gray-600 mb-2">
+                            {notification.message}
+                          </p>
+                          <div className="flex items-center space-x-4 text-sm text-gray-500">
+                            <span>
+                              <i className="fas fa-route mr-1"></i>
+                              {notification.route}
+                            </span>
+                            <span>
+                              <i className="fas fa-clock mr-1"></i>
+                              {notification.time}
+                            </span>
+                            <span>
+                              <i className="fas fa-calendar mr-1"></i>
+                              {notification.date}
+                            </span>
                           </div>
                         </div>
                       </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center space-x-2">
-                        {notification.isRead ? (
-                          <button
-                            onClick={() => markAsUnread(notification.id)}
-                            className="text-gray-400 hover:text-gray-600"
-                            title="Mark as unread"
-                          >
-                            <i className="fas fa-envelope"></i>
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => markAsRead(notification.id)}
-                            className="text-gray-400 hover:text-gray-600"
-                            title="Mark as read"
-                          >
-                            <i className="fas fa-envelope-open"></i>
-                          </button>
-                        )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {notification.isRead ? (
                         <button
-                          onClick={() => deleteNotification(notification.id)}
-                          className="text-red-400 hover:text-red-600"
-                          title="Delete notification"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markAsUnread(notification.id);
+                          }}
+                          className="text-gray-400 hover:text-gray-600"
+                          title="Mark as unread"
                         >
-                          <i className="fas fa-trash"></i>
+                          <i className="fas fa-envelope"></i>
                         </button>
-                      </div>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markAsRead(notification.id);
+                          }}
+                          className="text-gray-400 hover:text-gray-600"
+                          title="Mark as read"
+                        >
+                          <i className="fas fa-envelope-open"></i>
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteNotification(notification.id);
+                        }}
+                        className="text-red-400 hover:text-red-600"
+                        title="Delete notification"
+                      >
+                        <i className="fas fa-trash"></i>
+                      </button>
                     </div>
                   </div>
                 ))}
