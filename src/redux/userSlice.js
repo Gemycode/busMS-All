@@ -116,6 +116,12 @@ const userSlice = createSlice({
       state.user = action.payload.user;
       state.token = action.payload.token;
     },
+       loadUserFromStorage: (state) => {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        state.user = JSON.parse(storedUser);
+      }
+    },
     logout(state) {
       state.user = null;
       state.token = null;

@@ -156,7 +156,7 @@ const Header = () => {
                         dispatch(logout());
                         setUserMenuOpen(false);
                       }}
-                      className="block w-full text-center px-4 py-2 text-red-600 hover:bg-red-100 text-sm"
+                      className="block w-full text-center  px-4 py-2 text-red-600 hover:bg-red-100 text-sm"
                     >
                       Sign Out
                     </button>

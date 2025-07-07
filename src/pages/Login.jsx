@@ -196,9 +196,12 @@ const Login = () => {
           else if (role === 'manager') navigate('/manager-dashboard');
           else if (role === 'driver') navigate('/driver-dashboard');
           else if (role === 'parent') navigate('/parent-dashboard');
-          else navigate('/');
+          
+
+          else navigate('/attendance-management');
         }
       });
+      
     }
   }
 
@@ -210,6 +213,9 @@ const Login = () => {
     const isNameValid = validateName()
     const isUserRoleValid = validateUserRole()
     const isTermsValid = validateTerms()
+    localStorage.setItem('token', response.data.token);
+    localStorage.setItem('user', JSON.stringify(response.data.user));
+    dispatch(setUser(response.data.user));
 
     if (
       isEmailValid &&
@@ -354,21 +360,19 @@ const Login = () => {
                     <div className="flex border-b border-gray-200">
                       <button
                         onClick={() => setActiveTab("signin")}
-                        className={`flex-1 py-4 text-center transition-colors duration-200 ${
-                          activeTab === "signin"
-                            ? "bg-brand-beige text-brand-dark-blue font-bold"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
+                        className={`flex-1 py-4 text-center transition-colors duration-200 ${activeTab === "signin"
+                          ? "bg-brand-beige text-brand-dark-blue font-bold"
+                          : "bg-gray-100 text-gray-600"
+                          }`}
                       >
                         Sign In
                       </button>
                       <button
                         onClick={() => setActiveTab("signup")}
-                        className={`flex-1 py-4 text-center transition-colors duration-200 ${
-                          activeTab === "signup"
-                            ? "bg-brand-beige text-brand-dark-blue font-bold"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
+                        className={`flex-1 py-4 text-center transition-colors duration-200 ${activeTab === "signup"
+                          ? "bg-brand-beige text-brand-dark-blue font-bold"
+                          : "bg-gray-100 text-gray-600"
+                          }`}
                       >
                         Sign Up
                       </button>
@@ -400,9 +404,8 @@ const Login = () => {
                               value={email}
                               onChange={(e) => setEmail(e.target.value)}
                               onBlur={validateEmail}
-                              className={`pl-10 w-full h-12 border ${
-                                formErrors.email ? "border-red-500" : "border-gray-300"
-                              } rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue`}
+                              className={`pl-10 w-full h-12 border ${formErrors.email ? "border-red-500" : "border-gray-300"
+                                } rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue`}
                               placeholder="your@email.com"
                               required
                             />
@@ -433,9 +436,8 @@ const Login = () => {
                               value={password}
                               onChange={(e) => setPassword(e.target.value)}
                               onBlur={validatePassword}
-                              className={`pl-10 pr-10 w-full h-12 border ${
-                                formErrors.password ? "border-red-500" : "border-gray-300"
-                              } rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue`}
+                              className={`pl-10 pr-10 w-full h-12 border ${formErrors.password ? "border-red-500" : "border-gray-300"
+                                } rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue`}
                               required
                             />
                             <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -488,9 +490,8 @@ const Login = () => {
                               value={firstName}
                               onChange={(e) => setFirstName(e.target.value)}
                               onBlur={validateName}
-                              className={`w-full h-12 border ${
-                                formErrors.firstName ? "border-red-500" : "border-gray-300"
-                              } rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue px-3`}
+                              className={`w-full h-12 border ${formErrors.firstName ? "border-red-500" : "border-gray-300"
+                                } rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue px-3`}
                               placeholder="John"
                               required
                             />
@@ -508,9 +509,8 @@ const Login = () => {
                               value={lastName}
                               onChange={(e) => setLastName(e.target.value)}
                               onBlur={validateName}
-                              className={`w-full h-12 border ${
-                                formErrors.lastName ? "border-red-500" : "border-gray-300"
-                              } rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue px-3`}
+                              className={`w-full h-12 border ${formErrors.lastName ? "border-red-500" : "border-gray-300"
+                                } rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue px-3`}
                               placeholder="Doe"
                               required
                             />
@@ -532,9 +532,8 @@ const Login = () => {
                               value={email}
                               onChange={(e) => setEmail(e.target.value)}
                               onBlur={validateEmail}
-                              className={`pl-10 w-full h-12 border ${
-                                formErrors.email ? "border-red-500" : "border-gray-300"
-                              } rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue`}
+                              className={`pl-10 w-full h-12 border ${formErrors.email ? "border-red-500" : "border-gray-300"
+                                } rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue`}
                               placeholder="your@email.com"
                               required
                             />
@@ -565,9 +564,8 @@ const Login = () => {
                             value={userRole}
                             onChange={(e) => setUserRole(e.target.value)}
                             onBlur={validateUserRole}
-                            className={`w-full h-12 border ${
-                              formErrors.userRole ? "border-red-500" : "border-gray-300"
-                            } rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue px-3`}
+                            className={`w-full h-12 border ${formErrors.userRole ? "border-red-500" : "border-gray-300"
+                              } rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue px-3`}
                             required
                           >
                             <option value="">Select your role</option>
@@ -649,9 +647,8 @@ const Login = () => {
                                 validatePassword()
                                 setShowPasswordRequirements(false)
                               }}
-                              className={`pl-10 pr-10 w-full h-12 border ${
-                                formErrors.password ? "border-red-500" : "border-gray-300"
-                              } rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue`}
+                              className={`pl-10 pr-10 w-full h-12 border ${formErrors.password ? "border-red-500" : "border-gray-300"
+                                } rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue`}
                               required
                             />
                             <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -672,26 +669,24 @@ const Login = () => {
                               <div className="flex items-center justify-between mb-1">
                                 <span className="text-xs text-gray-600">Password strength:</span>
                                 <span
-                                  className={`text-xs font-medium ${
-                                    passwordStrength <= 2
-                                      ? "text-red-600"
-                                      : passwordStrength <= 4
-                                        ? "text-yellow-600"
-                                        : "text-green-600"
-                                  }`}
+                                  className={`text-xs font-medium ${passwordStrength <= 2
+                                    ? "text-red-600"
+                                    : passwordStrength <= 4
+                                      ? "text-yellow-600"
+                                      : "text-green-600"
+                                    }`}
                                 >
                                   {passwordMessage}
                                 </span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div
-                                  className={`h-2 rounded-full transition-all duration-300 ${
-                                    passwordStrength <= 2
-                                      ? "bg-red-500"
-                                      : passwordStrength <= 4
-                                        ? "bg-yellow-500"
-                                        : "bg-green-500"
-                                  }`}
+                                  className={`h-2 rounded-full transition-all duration-300 ${passwordStrength <= 2
+                                    ? "bg-red-500"
+                                    : passwordStrength <= 4
+                                      ? "bg-yellow-500"
+                                      : "bg-green-500"
+                                    }`}
                                   style={{ width: `${(passwordStrength / 5) * 100}%` }}
                                 ></div>
                               </div>
@@ -749,9 +744,8 @@ const Login = () => {
                               value={confirmPassword}
                               onChange={(e) => setConfirmPassword(e.target.value)}
                               onBlur={validateConfirmPassword}
-                              className={`pl-10 pr-10 w-full h-12 border ${
-                                formErrors.confirmPassword ? "border-red-500" : "border-gray-300"
-                              } rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue`}
+                              className={`pl-10 pr-10 w-full h-12 border ${formErrors.confirmPassword ? "border-red-500" : "border-gray-300"
+                                } rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue`}
                               required
                             />
                             <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -776,9 +770,8 @@ const Login = () => {
                               checked={agreeTerms}
                               onChange={(e) => setAgreeTerms(e.target.checked)}
                               onBlur={validateTerms}
-                              className={`h-4 w-4 text-brand-medium-blue focus:ring-brand-medium-blue border-gray-300 rounded mt-1 ${
-                                formErrors.agreeTerms ? "border-red-500" : ""
-                              }`}
+                              className={`h-4 w-4 text-brand-medium-blue focus:ring-brand-medium-blue border-gray-300 rounded mt-1 ${formErrors.agreeTerms ? "border-red-500" : ""
+                                }`}
                             />
                             <span className="ml-2 text-sm text-gray-700">
                               I agree to the{" "}
@@ -831,9 +824,8 @@ const Login = () => {
                               value={email}
                               onChange={(e) => setEmail(e.target.value)}
                               onBlur={validateEmail}
-                              className={`pl-10 w-full h-12 border ${
-                                formErrors.email ? "border-red-500" : "border-gray-300"
-                              } rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue`}
+                              className={`pl-10 w-full h-12 border ${formErrors.email ? "border-red-500" : "border-gray-300"
+                                } rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue`}
                               placeholder="your@email.com"
                               required
                             />

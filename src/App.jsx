@@ -1,4 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom"
+import { useDispatch } from "react-redux";
+import React, { useEffect } from 'react';
+import { setUser } from './redux/userSlice';
 import Header from "./components/Header"
 import Footer from "./components/Footer"
 import Home from "./pages/Home"
@@ -32,8 +35,19 @@ import BookingReports from './pages/BookingReports'
 import DriverReports from './pages/DriverReports'
 import AttendanceManagement from "./pages/AttendanceManagement"
 
-
+const loadUserFromStorage = () => {
+  const user = localStorage.getItem('user');
+  return user ? JSON.parse(user) : null;
+};
 function App() {
+  const dispatch = useDispatch();
+
+useEffect(() => {
+  const userFromStorage = loadUserFromStorage();
+  if (userFromStorage) {
+    dispatch(setUser(userFromStorage)); 
+  }
+}, [dispatch]);
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -50,7 +64,7 @@ function App() {
         <Route path="/driver-profile" element={<DriverProfile />} />
         <Route path="/parent-profile" element={
           // <RouteGuard allowedRoles={["parent"]}>
-            <ParentProfile />
+          <ParentProfile />
           // </RouteGuard>
         } />
         <Route path="/admin-dashboard" element={
