@@ -22,12 +22,13 @@ api.interceptors.response.use(
   (error) => {
     console.error("API Error:", error);
     if (error.response?.status === 401) {
-      // Handle unauthorized access
       localStorage.removeItem("token");
       window.location.href = "/login";
+      return;
     }
-    if (error.response?.status === 403) {
-      alert("ليس لديك صلاحية للوصول إلى هذا الجزء من النظام.");
+    if (error.response?.status === 403 && localStorage.getItem('token')) {
+      console.log(error);
+      
     }
     return Promise.reject(error);
   }

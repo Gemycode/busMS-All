@@ -5,9 +5,25 @@ import { useSelector, useDispatch } from 'react-redux'
 import { Link } from "react-router-dom"
 import { fetchProfile, updateProfile, changePassword } from '../redux/userSlice'
 
+// Helper to get full image URL
+const getProfileImageUrl = (user) => {
+  // Prefer user.image or user.imageUrl from database
+  const img = user.imageUrl || user.image || user.profileImage || '';
+  if (!img) return '/default-avatar.png';
+  if (img.startsWith('http://') || img.startsWith('https://')) return img;
+  // Adjust the path if you store images locally
+  return `/uploads/${img}`;
+};
+
 const Settings = () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    window.location.href = "/login";
+    return null;
+  }
+  // Get user from localStorage
+  const user = JSON.parse(localStorage.getItem('user')) || {};
   const dispatch = useDispatch()
-  const user = useSelector((state) => state.user.user)
   const { loading, error } = useSelector((state) => state.user)
   
   // Guard: Show loading if user data is not ready
@@ -49,13 +65,16 @@ const Settings = () => {
 
   // Profile state
   const [editMode, setEditMode] = useState(false)
+  // Use user data from localStorage for profileData
   const [profileData, setProfileData] = useState({ 
-    firstName: '', 
-    lastName: '', 
-    email: '', 
-    phone: '', 
-    role: '', 
-    profileImage: '' 
+    firstName: user.firstName || '', 
+    lastName: user.lastName || '', 
+    email: user.email || '', 
+    phone: user.phone || '', 
+    image: user.image || '',
+    imageUrl: user.imageUrl || '',
+    role: user.role || '', 
+    profileImage: user.profileImage || '' 
   })
   const [profileImageFile, setProfileImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState('')
@@ -159,30 +178,27 @@ const Settings = () => {
     setExpandedFaq(expandedFaq === id ? null : id)
   }
 
+  // Remove fetchProfile and API-based profile loading
   useEffect(() => {
-    // Load user settings from localStorage or API
+    // Load user settings from localStorage
     const savedSettings = localStorage.getItem('userSettings')
     if (savedSettings) {
       setSettings(JSON.parse(savedSettings))
     }
 
-    // Load profile data
-    dispatch(fetchProfile())
-  }, [dispatch])
-
-  useEffect(() => {
-    if (user) {
-      setProfileData({
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        email: user.email || '',
-        phone: user.phone || '',
-        role: user.role || '',
-        profileImage: user.profileImage || '',
-      })
-      setImagePreview(user.profileImage || '')
-    }
-  }, [user])
+    // Use user data from localStorage for profileData
+    setProfileData({
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      image: user.image || '',
+      imageUrl: user.imageUrl || '',
+      role: user.role || '',
+      profileImage: user.profileImage || '',
+    })
+    setImagePreview(getProfileImageUrl(user));
+  }, []) // Removed dispatch from dependency array
 
   const handleSettingChange = (category, key, value) => {
     setSettings(prev => ({
@@ -237,15 +253,32 @@ const Settings = () => {
     setSuccessMsg('')
     setErrorMsg('')
     let dataToSend = { ...profileData }
-    if (profileImageFile) {
-      dataToSend.profileImage = profileImageFile
-    }
-    const res = await dispatch(updateProfile(dataToSend))
-    if (!res.error) {
-      setEditMode(false)
-      setSuccessMsg('Profile updated successfully!')
-    } else {
-      setErrorMsg(res.payload || 'Failed to update profile')
+    try {
+      // Handle image upload if a new file is selected
+      if (profileImageFile) {
+        const formData = new FormData();
+        formData.append('file', profileImageFile);
+        formData.append('upload_preset', 'buses_ms'); // Cloudinary preset
+        const cloudinaryRes = await fetch('https://api.cloudinary.com/v1_1/dysgbwjsr/image/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const cloudinaryData = await cloudinaryRes.json();
+        dataToSend.image = cloudinaryData.secure_url;
+      }
+      // Dispatch updateProfile to save in database
+      const res = await dispatch(updateProfile(dataToSend));
+      if (!res.error) {
+        setProfileData(res.payload);
+        localStorage.setItem('user', JSON.stringify(res.payload));
+        setEditMode(false);
+        setSuccessMsg('Profile updated successfully!');
+        setImagePreview(getProfileImageUrl(res.payload));
+      } else {
+        setErrorMsg(res.payload || 'Failed to update profile');
+      }
+    } catch (error) {
+      setErrorMsg('Failed to update profile');
     }
   }
 
@@ -407,7 +440,7 @@ const Settings = () => {
                       <div className="flex flex-col items-center mb-8">
                         <div className="relative group">
                           <img
-                            src={imagePreview || '/default-avatar.png'}
+                            src={imagePreview}
                             alt="Profile"
                             className="w-28 h-28 rounded-full object-cover border-4 border-brand-medium-blue shadow"
                           />

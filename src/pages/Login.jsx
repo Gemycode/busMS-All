@@ -206,16 +206,13 @@ const Login = () => {
   }
 
   const submitSignUp = (e) => {
-    e.preventDefault()
-    const isEmailValid = validateEmail()
-    const isPasswordValid = validatePassword()
-    const isConfirmPasswordValid = validateConfirmPassword()
-    const isNameValid = validateName()
-    const isUserRoleValid = validateUserRole()
-    const isTermsValid = validateTerms()
-    localStorage.setItem('token', response.data.token);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
-    dispatch(setUser(response.data.user));
+    e.preventDefault();
+    const isEmailValid = validateEmail();
+    const isPasswordValid = validatePassword();
+    const isConfirmPasswordValid = validateConfirmPassword();
+    const isNameValid = validateName();
+    const isUserRoleValid = validateUserRole();
+    const isTermsValid = validateTerms();
 
     if (
       isEmailValid &&
@@ -238,6 +235,10 @@ const Login = () => {
         })
       ).then((res) => {
         if (res.meta.requestStatus === 'fulfilled') {
+          // Store user and token in localStorage after successful registration
+          localStorage.setItem('token', res.payload.token);
+          localStorage.setItem('user', JSON.stringify(res.payload.user));
+          dispatch(setUser(res.payload.user));
           setFormSubmitted(true);
         }
       });
