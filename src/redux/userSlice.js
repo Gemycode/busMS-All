@@ -100,12 +100,45 @@ export const changePassword = createAsyncThunk(
   }
 );
 
+// Fetch children for logged-in parent
+export const fetchChildren = createAsyncThunk(
+  'user/fetchChildren',
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await api.get('/users/me/children');
+      return res.data.children;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Failed to fetch children');
+    }
+  }
+);
+
+// Add a child for logged-in parent
+export const addChild = createAsyncThunk(
+  'user/addChild',
+  async (childData, { rejectWithValue }) => {
+    try {
+      const res = await api.post('/users/me/children', childData);
+      return res.data.child;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Failed to add child');
+    }
+  }
+);
+
 const initialState = {
   user: JSON.parse(localStorage.getItem('user')) || null,
   token: localStorage.getItem('token') || null,
   allUsers: [],
   loading: false,
   error: null,
+  // Children management
+  children: [],
+  childrenLoading: false,
+  childrenError: null,
+  addChildLoading: false,
+  addChildError: null,
+  addChildSuccess: false,
 };
 
 const userSlice = createSlice({
@@ -213,6 +246,33 @@ const userSlice = createSlice({
       .addCase(changePassword.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(fetchChildren.pending, (state) => {
+        state.childrenLoading = true;
+        state.childrenError = null;
+      })
+      .addCase(fetchChildren.fulfilled, (state, action) => {
+        state.childrenLoading = false;
+        state.children = action.payload;
+      })
+      .addCase(fetchChildren.rejected, (state, action) => {
+        state.childrenLoading = false;
+        state.childrenError = action.payload;
+      })
+      .addCase(addChild.pending, (state) => {
+        state.addChildLoading = true;
+        state.addChildError = null;
+        state.addChildSuccess = false;
+      })
+      .addCase(addChild.fulfilled, (state, action) => {
+        state.addChildLoading = false;
+        state.addChildSuccess = true;
+        state.children.push(action.payload);
+      })
+      .addCase(addChild.rejected, (state, action) => {
+        state.addChildLoading = false;
+        state.addChildError = action.payload;
+        state.addChildSuccess = false;
       });
   },
 });
