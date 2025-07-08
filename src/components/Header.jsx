@@ -116,6 +116,24 @@ const Header = () => {
                       <div className="font-bold">{user.firstName} {user.lastName}</div>
                       <div className="text-sm text-gray-600">{user.email}</div>
                     </div>
+                    {user.role === 'parent' && (
+                      <>
+                        <Link
+                          to="/dashboard/parent"
+                          className="block w-full text-center bg-brand-beige text-brand-dark-blue font-bold py-2 rounded hover:bg-opacity-90"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <i className="fas fa-home mr-1"></i>Parent Dashboard
+                        </Link>
+                        <Link
+                          to="/parent-profile"
+                          className="block w-full text-center bg-brand-beige text-brand-dark-blue font-bold py-2 rounded hover:bg-opacity-90"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <i className="fas fa-user mr-1"></i>Profile
+                        </Link>
+                      </>
+                    )}
                     <Link
                       to="/profile"
                       className="block w-full text-center bg-[#ead8b1] text-[#0e90cb] font-bold py-2 rounded hover:bg-opacity-90"
@@ -170,6 +188,17 @@ const Header = () => {
             )}
           </nav>
 
+          {/* Parent Dashboard Button (Desktop) */}
+          {user && user.role === 'parent' && (
+            <Link
+              to="/dashboard/parent"
+              className="font-medium text-brand-beige bg-brand-dark-blue border border-brand-beige rounded px-3 py-2 hover:bg-brand-beige hover:text-brand-dark-blue transition-colors duration-200"
+              style={{ marginLeft: 8 }}
+            >
+              <i className="fas fa-home mr-2"></i>Parent Dashboard
+            </Link>
+          )}
+
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center space-x-2">
             {/* Mobile Notification Bell */}
@@ -196,6 +225,16 @@ const Header = () => {
                 <div className="font-bold text-brand-dark-blue">{user.firstName} {user.lastName}</div>
                 <div className="text-sm text-gray-700">{user.email}</div>
               </div>
+            )}
+            {/* Parent Dashboard Button (Mobile) */}
+            {user && user.role === 'parent' && (
+              <Link
+                to="/dashboard/parent"
+                className="block px-3 py-2 bg-brand-beige text-brand-dark-blue font-bold rounded-md mt-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <i className="fas fa-home mr-1"></i>Parent Dashboard
+              </Link>
             )}
             <Link
               to="/"
@@ -235,7 +274,7 @@ const Header = () => {
             {user ? (
               <>
                 <Link
-                  to="/profile"
+                  to={user && user.role === 'parent' ? "/parent-profile" : "/profile"}
                   className="block px-3 py-2 bg-brand-beige text-brand-dark-blue font-bold rounded-md mt-4"
                   onClick={() => setMobileMenuOpen(false)}
                 >

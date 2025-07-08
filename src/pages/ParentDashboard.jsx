@@ -2,37 +2,70 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchChildren, addChild } from '../redux/userSlice';
 
 const ParentDashboard = () => {
+  const dispatch = useDispatch();
+  const {
+    children,
+    childrenLoading,
+    childrenError,
+    addChildLoading,
+    addChildError,
+    addChildSuccess,
+    user
+  } = useSelector((state) => state.user);
+
+  // Add Child Form State
+  const [childForm, setChildForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: ''
+  });
+
+  // Fetch children on mount
+  useEffect(() => {
+    dispatch(fetchChildren());
+  }, [dispatch]);
+
+  // Reset form and refresh children after successful add
+  useEffect(() => {
+    if (addChildSuccess) {
+      setChildForm({ firstName: '', lastName: '', email: '', password: '' });
+      dispatch(fetchChildren());
+    }
+  }, [addChildSuccess, dispatch]);
+
+  // Auto-hide success/error messages after 3 seconds
+  useEffect(() => {
+    let timer;
+    if (addChildSuccess || addChildError) {
+      timer = setTimeout(() => {
+        // Optionally, you could dispatch an action to reset addChildSuccess/addChildError in Redux
+        // For now, just let the message disappear from the UI by local state
+      }, 3000);
+    }
+    return () => clearTimeout(timer);
+  }, [addChildSuccess, addChildError]);
+
+  // Handlers
+  const handleInputChange = (e) => {
+    setChildForm({ ...childForm, [e.target.name]: e.target.value });
+  };
+
+  const handleAddChild = (e) => {
+    e.preventDefault();
+    dispatch(addChild(childForm));
+  };
+
   const [parent, setParent] = useState({
     name: 'Sarah Johnson',
     email: 'sarah.johnson@example.com',
     phone: '+1234567890',
     childrenCount: 2
   });
-
-  const [children, setChildren] = useState([
-    {
-      id: 1,
-      name: 'Emma Johnson',
-      age: 12,
-      grade: '6th Grade',
-      studentId: 'STU002',
-      status: 'on_bus',
-      currentLocation: 'Route A - Downtown',
-      lastSeen: '2 minutes ago'
-    },
-    {
-      id: 2,
-      name: 'Michael Johnson',
-      age: 15,
-      grade: '9th Grade',
-      studentId: 'STU003',
-      status: 'at_school',
-      currentLocation: 'School Campus',
-      lastSeen: '1 hour ago'
-    }
-  ]);
 
   const [recentBookings, setRecentBookings] = useState([
     {
@@ -112,13 +145,72 @@ const ParentDashboard = () => {
         {/* Dashboard Content */}
         <section className="py-8">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Add Child Form */}
+            <div className="mb-8 max-w-xl mx-auto bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-bold text-brand-dark-blue mb-4">Add a Child</h2>
+              <form onSubmit={handleAddChild} className="space-y-4">
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700">First Name</label>
+                    <input
+                      type="text"
+                      name="firstName"
+                      value={childForm.firstName}
+                      onChange={handleInputChange}
+                      required
+                      className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700">Last Name</label>
+                    <input
+                      type="text"
+                      name="lastName"
+                      value={childForm.lastName}
+                      onChange={handleInputChange}
+                      required
+                      className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Email (optional)</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={childForm.email}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Password (optional)</label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={childForm.password}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full py-2 px-4 bg-brand-dark-blue text-white font-semibold rounded-md hover:bg-brand-medium-blue transition-all duration-200"
+                  disabled={addChildLoading}
+                >
+                  {addChildLoading ? 'Adding...' : 'Add Child'}
+                </button>
+                {addChildError && <p className="text-red-600 text-sm mt-2">{addChildError}</p>}
+                {addChildSuccess && <p className="text-green-600 text-sm mt-2">Child added successfully!</p>}
+              </form>
+            </div>
             {/* Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <div className="bg-white rounded-lg shadow-md p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-500">Children</p>
-                    <p className="text-3xl font-bold text-gray-900">{parent.childrenCount}</p>
+                    <p className="text-3xl font-bold text-gray-900">{children.length}</p>
                     <p className="text-sm text-green-600">
                       <i className="fas fa-check mr-1"></i>All safe
                     </p>
@@ -183,65 +275,51 @@ const ParentDashboard = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Children Status */}
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="bg-white rounded-lg shadow-md p-6 mb-8">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-bold text-brand-dark-blue">Children Status</h2>
-                  <Link
-                    to="/children"
-                    className="text-brand-medium-blue hover:text-brand-dark-blue text-sm font-medium"
-                  >
-                    Manage All →
-                  </Link>
                 </div>
-                <div className="space-y-4">
-                  {children.map((child) => (
-                    <div key={child.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center mb-2">
-                            <h3 className="font-semibold text-gray-900">{child.name}</h3>
-                            <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                              child.status === 'on_bus' 
-                                ? 'bg-orange-100 text-orange-800' 
-                                : 'bg-green-100 text-green-800'
-                            }`}>
-                              <i className={`fas ${child.status === 'on_bus' ? 'fa-bus' : 'fa-school'} mr-1`}></i>
-                              {child.status === 'on_bus' ? 'On Bus' : 'At School'}
-                            </span>
+                {childrenLoading ? (
+                  <p>Loading children...</p>
+                ) : childrenError ? (
+                  <p className="text-red-600">{childrenError}</p>
+                ) : children.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <i className="fas fa-child text-4xl mb-2"></i>
+                  <p className="mt-2">You have not added any children yet.</p>
+                  <p className="text-sm">Use the form above to register your first child.</p>
+                </div>
+                ) : (
+                  <div className="space-y-4">
+                    {children.map((child) => (
+                      <div key={child._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center mb-2">
+                              <h3 className="font-semibold text-gray-900">{child.firstName} {child.lastName}</h3>
+                            </div>
+                            <p className="text-sm text-gray-600">
+                              <i className="fas fa-id-card mr-1"></i>
+                              {child.email || 'No email'}
+                            </p>
+                           {child.grade && (
+                             <p className="text-sm text-gray-500">
+                               <i className="fas fa-graduation-cap mr-1"></i>
+                               Grade: {child.grade}
+                             </p>
+                           )}
+                           {child.status && (
+                             <p className="text-sm text-gray-500">
+                               <i className="fas fa-info-circle mr-1"></i>
+                               Status: {child.status}
+                             </p>
+                           )}
                           </div>
-                          <p className="text-sm text-gray-600">
-                            <i className="fas fa-id-card mr-1"></i>
-                            {child.studentId} • {child.grade}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            <i className="fas fa-map-marker-alt mr-1"></i>
-                            {child.currentLocation}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            <i className="fas fa-clock mr-1"></i>
-                            Last seen: {child.lastSeen}
-                          </p>
-                        </div>
-                        <div className="flex space-x-2">
-                          <Link
-                            to={`/track-child/${child.id}`}
-                            className="text-brand-medium-blue hover:text-brand-dark-blue text-sm font-medium"
-                          >
-                            <i className="fas fa-map-marker-alt mr-1"></i>
-                            Track
-                          </Link>
-                          <Link
-                            to={`/book-for-child/${child.id}`}
-                            className="text-green-600 hover:text-green-800 text-sm font-medium"
-                          >
-                            <i className="fas fa-plus mr-1"></i>
-                            Book
-                          </Link>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Recent Bookings */}
