@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { 
-  fetchAttendances, 
-  fetchAttendanceStats, 
-  createAttendance, 
-  updateAttendance, 
+import {
+  fetchAttendances,
+  fetchAttendanceStats,
+  createAttendance,
+  updateAttendance,
   deleteAttendance,
-  clearError, 
-  clearSuccess 
+  clearError,
+  clearSuccess
 } from '../redux/attendanceSlice';
+import { fetchAllUsers } from '../redux/userSlice';
 import { FaPlus, FaEdit, FaTrash, FaFilter, FaChartBar } from 'react-icons/fa';
 import Toast from '../components/Toast';
 
@@ -27,17 +28,31 @@ const AttendanceManagement = () => {
   });
   const [formData, setFormData] = useState({
     personId: '',
-    personType: 'Student',
+    personType: 'student',
     date: new Date().toISOString().split('T')[0],
     status: 'present',
     boardingTime: '',
     deboardingTime: ''
   });
-
+  const [users, setUsers] = useState([]);
   useEffect(() => {
-    dispatch(fetchAttendances(filters));
-    dispatch(fetchAttendanceStats(filters));
-  }, [dispatch, filters]);
+  if (!user) {
+    console.warn("User not found. Redirecting...");
+  }
+}, [user]);
+
+
+ useEffect(() => {
+  
+  const formattedFilters = {
+    ...filters,
+    date: filters.date ? new Date(filters.date).toISOString().split('T')[0] : ''
+  };
+
+  dispatch(fetchAttendances(formattedFilters));
+  dispatch(fetchAttendanceStats(formattedFilters));
+}, [dispatch, filters]);
+
 
   useEffect(() => {
     if (success) {
@@ -82,7 +97,7 @@ const AttendanceManagement = () => {
     setEditingAttendance(null);
     setFormData({
       personId: '',
-      personType: 'Student',
+      personType: 'student',
       date: new Date().toISOString().split('T')[0],
       status: 'present',
       boardingTime: '',
@@ -102,6 +117,23 @@ const AttendanceManagement = () => {
       personId: ''
     });
   };
+
+  // جلب المستخدمين عند فتح الفورم
+  useEffect(() => {
+    if (showForm) {
+      dispatch(fetchAllUsers()).then((action) => {
+        if (action.payload) setUsers(action.payload);
+      });
+    }
+  }, [showForm, dispatch]);
+
+  // إعادة تعيين personId عند تغيير personType
+  useEffect(() => {
+    setFormData((prev) => ({ ...prev, personId: '' }));
+  }, [formData.personType]);
+
+  // فلترة المستخدمين حسب النوع
+  const filteredUsers = users.filter(u => u.role === formData.personType);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -123,7 +155,7 @@ const AttendanceManagement = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
@@ -133,7 +165,7 @@ const AttendanceManagement = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
@@ -143,7 +175,7 @@ const AttendanceManagement = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
@@ -153,7 +185,7 @@ const AttendanceManagement = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
@@ -192,7 +224,7 @@ const AttendanceManagement = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Person Type</label>
                 <select
@@ -201,11 +233,11 @@ const AttendanceManagement = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">All Types</option>
-                  <option value="Student">Student</option>
-                  <option value="Employee">Employee</option>
+                  <option value="student">Student</option>
+                  <option value="employee">Employee</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select
@@ -218,7 +250,7 @@ const AttendanceManagement = () => {
                   <option value="absent">Absent</option>
                 </select>
               </div>
-              
+
               <div className="flex items-end">
                 <button
                   onClick={() => setShowForm(true)}
@@ -237,7 +269,7 @@ const AttendanceManagement = () => {
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-medium text-gray-900">Attendance Records</h3>
           </div>
-          
+
           {loading ? (
             <div className="p-6 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -285,11 +317,10 @@ const AttendanceManagement = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          attendance.personType === 'Student' 
-                            ? 'bg-blue-100 text-blue-800' 
-                            : 'bg-purple-100 text-purple-800'
-                        }`}>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${attendance.personType === 'Student'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-purple-100 text-purple-800'
+                          }`}>
                           {attendance.personType}
                         </span>
                       </td>
@@ -297,11 +328,10 @@ const AttendanceManagement = () => {
                         {new Date(attendance.date).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          attendance.status === 'present' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${attendance.status === 'present'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                          }`}>
                           {attendance.status}
                         </span>
                       </td>
@@ -333,7 +363,7 @@ const AttendanceManagement = () => {
                   ))}
                 </tbody>
               </table>
-              
+
               {attendances.length === 0 && (
                 <div className="p-6 text-center text-gray-500">
                   No attendance records found
@@ -351,36 +381,41 @@ const AttendanceManagement = () => {
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   {editingAttendance ? 'Edit Attendance' : 'Add Attendance Record'}
                 </h3>
-                
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Person ID
+                      الشخص
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={formData.personId}
-                      onChange={(e) => setFormData({...formData, personId: e.target.value})}
+                      onChange={e => setFormData({ ...formData, personId: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
-                    />
+                    >
+                      <option value="">اختر {formData.personType === 'student' ? 'طالب' : 'موظف'}</option>
+                      {filteredUsers.map(u => (
+                        <option key={u._id} value={u._id}>
+                          {u.firstName} {u.lastName} ({u.email})
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Person Type
                     </label>
                     <select
                       value={formData.personType}
-                      onChange={(e) => setFormData({...formData, personType: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, personType: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     >
-                      <option value="Student">Student</option>
-                      <option value="Employee">Employee</option>
+                      <option value="student">Student</option>
+                      <option value="employee">Employee</option>
                     </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Date
@@ -388,19 +423,19 @@ const AttendanceManagement = () => {
                     <input
                       type="date"
                       value={formData.date}
-                      onChange={(e) => setFormData({...formData, date: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Status
                     </label>
                     <select
                       value={formData.status}
-                      onChange={(e) => setFormData({...formData, status: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     >
@@ -408,7 +443,7 @@ const AttendanceManagement = () => {
                       <option value="absent">Absent</option>
                     </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Boarding Time
@@ -416,11 +451,11 @@ const AttendanceManagement = () => {
                     <input
                       type="time"
                       value={formData.boardingTime}
-                      onChange={(e) => setFormData({...formData, boardingTime: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, boardingTime: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Deboarding Time
@@ -428,11 +463,11 @@ const AttendanceManagement = () => {
                     <input
                       type="time"
                       value={formData.deboardingTime}
-                      onChange={(e) => setFormData({...formData, deboardingTime: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, deboardingTime: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  
+
                   <div className="flex space-x-3 pt-4">
                     <button
                       type="submit"
@@ -462,4 +497,4 @@ const AttendanceManagement = () => {
   );
 };
 
-export default AttendanceManagement; 
+export default AttendanceManagement;
