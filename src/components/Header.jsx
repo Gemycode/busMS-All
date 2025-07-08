@@ -93,36 +93,75 @@ const Header = () => {
 
             {/* User Info or Sign In */}
             {user ? (
-              <div className="flex items-center space-x-3">
-                <img
-                  src={user.image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.firstName || 'User')}
-                  alt="Profile"
-                  className="w-9 h-9 rounded-full object-cover border-2 border-brand-beige"
-                />
-                <span className="font-semibold text-brand-beige">{user.firstName} {user.lastName}</span>
-                
-                {/* Role-based navigation */}
-                {user.role === 'admin' && (
-                  <Link to="/admin-dashboard" className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 font-bold">Admin</Link>
-                )}
-                {user.role === 'manager' && (
-                  <Link to="/manager-dashboard" className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 font-bold">Manager</Link>
-                )}
-                {user.role === 'driver' && (
-                  <Link to="/driver-dashboard" className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 font-bold">Driver</Link>
-                )}
-                
-                {(user.role === 'admin' || user.role === 'manager') && (
-                  <Link to="/attendance" className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 font-bold">Attendance</Link>
-                )}
-                
-                <Link to="/profile" className="px-3 py-1 bg-brand-beige text-brand-dark-blue rounded hover:bg-opacity-80 font-bold">Profile</Link>
+              <div className="relative" ref={userMenuRef}>
                 <button
-                  onClick={() => dispatch(logout())}
-                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 font-bold"
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center space-x-2 hover:bg-brand-medium-blue px-3 py-2 rounded-md transition-colors"
                 >
-                  Logout
+                  <img
+                    src={user.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.firstName || 'User')}`}
+                    alt="Profile"
+                    className="w-8 h-8 rounded-full object-cover border-2 border-brand-beige"
+                  />
+                  <span className="text-sm font-semibold text-brand-beige">
+                    {user.firstName} {user.lastName}
+                  </span>
+                  <i className="fas fa-user text-brand-beige"></i>
                 </button>
+
+                {/* القائمة المنسدلة */}
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white text-black rounded shadow-lg z-50 overflow-hidden">
+                    <div className="px-4 py-2 border-b">
+                      <div className="font-bold">{user.firstName} {user.lastName}</div>
+                      <div className="text-sm text-gray-600">{user.email}</div>
+                    </div>
+                    <Link
+                      to="/profile"
+                      className="block w-full text-center bg-[#ead8b1] text-[#0e90cb] font-bold py-2 rounded hover:bg-opacity-90"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      profile
+                    </Link>
+                    {user.role === 'admin' && (
+                      <Link
+                        to="/admin-dashboard"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="block w-full text-center bg-orange-500 text-white font-bold py-2 rounded hover:bg-orange-600"
+                      >
+                        Admin dashboard
+                      </Link>
+                    )}
+                        {(user.role === 'admin' || user.role === 'manager') && (
+                  <Link
+                    to="/attendance"
+                    className="block w-full text-center bg-[#ead8b1] text-[#0e90cb] font-bold py-2 rounded hover:bg-opacity-90"
+                    onClick={() => setUserMenuOpen(false)}
+                  >
+                    Attendance Management
+                  </Link>
+                )}
+                    {user.role === 'manager' && (
+                      <Link
+                        to="/manager-dashboard"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="block w-full text-center bg-[#ead8b1] text-[#0e90cb] font-bold py-2 rounded hover:bg-opacity-90"
+                      >
+                        Manager dashboard
+                      </Link>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        dispatch(logout());
+                        setUserMenuOpen(false);
+                      }}
+                      className="block w-full text-center  px-4 py-2 text-red-600 hover:bg-red-100 text-sm"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <Link to="/login" className="px-3 py-1 bg-brand-beige text-brand-dark-blue rounded hover:bg-opacity-80 font-bold">
@@ -218,7 +257,7 @@ const Header = () => {
                 Sign In
               </Link>
             )}
-            
+
             {/* Role-based mobile navigation */}
             {user && user.role === 'admin' && (
               <Link
