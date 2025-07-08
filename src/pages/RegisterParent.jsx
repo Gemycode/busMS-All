@@ -86,7 +86,18 @@ const RegisterParent = () => {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      // Store user in localStorage (simulate backend response)
+      const user = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        role: 'parent',
+        profileImage: '',
+      };
+      localStorage.setItem('user', JSON.stringify(user));
+      // If backend returns a token, store it as well (simulate)
+      localStorage.setItem('token', 'dummy-token');
       // For now, just navigate to parent dashboard
       navigate('/dashboard/parent');
     } catch (error) {

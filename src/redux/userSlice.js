@@ -53,7 +53,7 @@ export const fetchProfile = createAsyncThunk(
   'user/fetchProfile',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await api.get('/users/me');
+      const res = await api.get('/me');
       return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || 'Failed to fetch profile');
@@ -217,5 +217,5 @@ const userSlice = createSlice({
   },
 });
 
-export const { setUser, logout } = userSlice.actions;
+export const { setUser, logout, loadUserFromStorage } = userSlice.actions;
 export default userSlice.reducer; 

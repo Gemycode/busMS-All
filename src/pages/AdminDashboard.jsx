@@ -12,6 +12,11 @@ import dayjs from "dayjs"
 import { fetchAttendanceStats } from "../redux/attendanceSlice"
 
 const AdminDashboard = () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    window.location.href = "/login";
+    return null;
+  }
   const dispatch = useDispatch();
   const attendanceStats = useSelector(state => state.attendance?.stats || {});
   const { buses, loading: busesLoading, error: busesError, message: busMsg } = useSelector((state) => state.buses || {});
