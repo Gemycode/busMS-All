@@ -7,9 +7,10 @@ import DynamicModal from "../components/DynamicModal"
 import { userSchema, busSchema, routeSchema } from "../components/schemas"
 import { fetchBuses, updateBus, deleteBus, clearMessage as clearBusMessage, createBus } from "../redux/BusSlice"
 import { fetchRoutes, createRoute, updateRoute, deleteRoute, clearMessage as clearRouteMessage } from "../redux/routesSlice"
-import { fetchAllUsers } from "../redux/userSlice"
+import { fetchAllUsers, registerUser, updateUser, deleteUser } from "../redux/userSlice"
 import dayjs from "dayjs"
 import { fetchAttendanceStats } from "../redux/attendanceSlice"
+import AdvancedLeafletMap from "../components/AdvancedLeafletMap";
 
 const AdminDashboard = () => {
   const token = localStorage.getItem('token');
@@ -39,6 +40,8 @@ const AdminDashboard = () => {
   const [editingRoute, setEditingRoute] = useState(null)
   const [showEditBusModal, setShowEditBusModal] = useState(false)
   const [editingBus, setEditingBus] = useState(null)
+  const [editingUser, setEditingUser] = useState(null);
+  const [showEditUserModal, setShowEditUserModal] = useState(false);
 
   // Bus creation form state
   const [busFormData, setBusFormData] = useState({
@@ -48,6 +51,22 @@ const AdminDashboard = () => {
     assigned_driver_id: '',
     route_id: ''
   })
+
+  const [routeFormData, setRouteFormData] = useState({
+    name: '',
+    start_point: '',
+    end_point: '',
+    estimated_time: '',
+  });
+  const [stops, setStops] = useState([]);
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [startPoint, setStartPoint] = useState(null);
+  const [endPoint, setEndPoint] = useState(null);
+  const [showStartMapModal, setShowStartMapModal] = useState(false);
+  const [showEndMapModal, setShowEndMapModal] = useState(false);
+  const [tempLatLng, setTempLatLng] = useState(null);
+  const [pointName, setPointName] = useState("");
+  const [pointType, setPointType] = useState(null); // 'start' or 'end'
 
   const previousRoutesCount = routes?.filter(route => dayjs(route.createdAt).isBefore(dayjs().subtract(1, 'day'))).length ?? 0;
 
@@ -311,85 +330,76 @@ const AdminDashboard = () => {
                   </div>
 
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            User
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Role
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Last Active
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        <tr>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="h-8 w-8 rounded-full bg-brand-beige flex items-center justify-center mr-3">
-                                <span className="text-sm font-medium text-brand-dark-blue">JD</span>
-                              </div>
-                              <div>
-                                <div className="text-sm font-medium text-gray-900">John Doe</div>
-                                <div className="text-sm text-gray-500">john.doe@example.com</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                              Driver
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                              Active
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2 hours ago</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button className="text-brand-medium-blue hover:text-brand-dark-blue mr-3">Edit</button>
-                            <button className="text-red-600 hover:text-red-900">Suspend</button>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="h-8 w-8 rounded-full bg-brand-beige flex items-center justify-center mr-3">
-                                <span className="text-sm font-medium text-brand-dark-blue">SM</span>
-                              </div>
-                              <div>
-                                <div className="text-sm font-medium text-gray-900">Sarah Miller</div>
-                                <div className="text-sm text-gray-500">sarah.miller@example.com</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
-                              Parent
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                              Active
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1 day ago</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button className="text-brand-medium-blue hover:text-brand-dark-blue mr-3">Edit</button>
-                            <button className="text-red-600 hover:text-red-900">Suspend</button>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
+                    {usersLoading ? (
+                      <div>Loading...</div>
+                    ) : allUsers && allUsers.length > 0 ? (
+                      <>
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                User
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Role
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Last Active
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {allUsers.slice(0, 5).map((user) => (
+                              <tr key={user._id}>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center">
+                                    <div className="h-8 w-8 rounded-full bg-brand-beige flex items-center justify-center mr-3">
+                                      <span className="text-sm font-medium text-brand-dark-blue">
+                                        {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <div className="text-sm font-medium text-gray-900">{user.firstName} {user.lastName}</div>
+                                      <div className="text-sm text-gray-500">{user.email}</div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                    {user.role}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                                    Active
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {user.updatedAt ? new Date(user.updatedAt).toLocaleDateString() : '-'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                  <button className="text-brand-medium-blue hover:text-brand-dark-blue mr-3" onClick={() => { setEditingUser(user); setShowEditUserModal(true); }}>Edit</button>
+                                  <button className="text-red-600 hover:text-red-900" onClick={async () => {
+                                    if(window.confirm('هل أنت متأكد أنك تريد حذف هذا المستخدم؟')) {
+                                      await dispatch(deleteUser(user._id));
+                                      dispatch(fetchAllUsers());
+                                    }
+                                  }}>Delete</button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </>
+                    ) : (
+                      <div>No users found.</div>
+                    )}
                   </div>
                 </div>
 
@@ -417,7 +427,7 @@ const AdminDashboard = () => {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {Array.isArray(buses) && buses.map((bus) => (
+                          {Array.isArray(buses) && buses.slice(0, 5).map((bus) => (
                             <tr key={bus._id}>
                               <td className="px-6 py-4 whitespace-nowrap">{bus.BusNumber}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{bus.capacity}</td>
@@ -471,8 +481,8 @@ const AdminDashboard = () => {
                           {Array.isArray(routes) && routes.map((route) => (
                             <tr key={route._id}>
                               <td className="px-6 py-4 whitespace-nowrap">{route.name}</td>
-                              <td className="px-6 py-4 whitespace-nowrap">{route.start_point}</td>
-                              <td className="px-6 py-4 whitespace-nowrap">{route.end_point}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{route.start_point?.name || '-'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{route.end_point?.name || '-'}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{route.stops?.length || 0}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{route.estimated_time}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -615,7 +625,15 @@ const AdminDashboard = () => {
       <DynamicModal
         isOpen={showUserModal}
         onClose={() => setShowUserModal(false)}
-        onSubmit={(data) => { setShowUserModal(false); console.log("User Data:", data); }}
+        onSubmit={async (data) => {
+          try {
+            await dispatch(registerUser(data));
+            setShowUserModal(false);
+            dispatch(fetchAllUsers());
+          } catch (err) {
+            alert('حدث خطأ أثناء إضافة المستخدم');
+          }
+        }}
         schema={userSchema}
         title="Add New User"
       />
@@ -765,27 +783,187 @@ const AdminDashboard = () => {
         </div>
       )}
       
+      {/* Create Route Modal */}
       <DynamicModal
         isOpen={showRouteModal}
-        onClose={() => { setShowRouteModal(false); }}
+        onClose={() => setShowRouteModal(false)}
         onSubmit={async (data) => {
           try {
-            const payload = {
-              name: data.name,
-              start_point: data.start_point,
-              end_point: data.end_point,
-              stops: (typeof data.stops === 'string') ? data.stops.split(",").map(s => s.trim()).filter(Boolean) : [],
-              estimated_time: data.estimated_time,
-            };
-            await dispatch(createRoute(payload));
+            await dispatch(createRoute({
+              ...data,
+              start_point: startPoint,
+              end_point: endPoint,
+              stops
+            }));
             setShowRouteModal(false);
+            setRouteFormData({ name: '', start_point: '', end_point: '', estimated_time: '' });
+            setStops([]);
+            setStartPoint(null);
+            setEndPoint(null);
+            dispatch(fetchRoutes());
           } catch (err) {
-            console.error("Route creation error:", err);
+            alert('حدث خطأ أثناء إضافة الطريق');
           }
         }}
-        schema={routeSchema}
+        schema={{
+          name: { type: 'text', label: 'Route Name', required: true },
+          estimated_time: { type: 'text', label: 'Estimated Time', required: true },
+        }}
         title="Create Route"
-      />
+      >
+        <div className="mb-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-opacity-90 flex items-center gap-2"
+              onClick={() => { setShowStartMapModal(true); setPointType('start'); }}
+            >
+              <i className="fas fa-map-marker-alt"></i> اختر نقطة البداية على الخريطة
+            </button>
+            {startPoint && (
+              <span className="ml-2 text-sm text-green-700 font-bold flex items-center gap-2">
+                <i className="fas fa-check-circle text-green-500"></i>
+                {startPoint.name} ({startPoint.lat.toFixed(5)}, {startPoint.long.toFixed(5)})
+                <button className="ml-2 text-red-600 hover:underline" onClick={() => setStartPoint(null)}>حذف</button>
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-opacity-90 flex items-center gap-2"
+              onClick={() => { setShowEndMapModal(true); setPointType('end'); }}
+            >
+              <i className="fas fa-map-marker-alt"></i> اختر نقطة النهاية على الخريطة
+            </button>
+            {endPoint && (
+              <span className="ml-2 text-sm text-blue-700 font-bold flex items-center gap-2">
+                <i className="fas fa-check-circle text-blue-500"></i>
+                {endPoint.name} ({endPoint.lat.toFixed(5)}, {endPoint.long.toFixed(5)})
+                <button className="ml-2 text-red-600 hover:underline" onClick={() => setEndPoint(null)}>حذف</button>
+              </span>
+            )}
+          </div>
+          <div>
+            <button
+              type="button"
+              className="px-3 py-2 bg-brand-medium-blue text-white rounded-md hover:bg-opacity-90"
+              onClick={() => setShowMapModal(true)}
+            >
+              إضافة محطة على الخريطة
+            </button>
+            <ul className="mt-2">
+              {stops.map((stop, idx) => (
+                <li key={idx} className="text-sm text-gray-700 flex items-center gap-2">
+                  <i className="fas fa-map-marker-alt text-brand-medium-blue"></i>
+                  {stop.name} ({stop.lat.toFixed(5)}, {stop.long.toFixed(5)})
+                  <button className="ml-2 text-red-600 hover:underline" onClick={() => setStops(stops.filter((_, i) => i !== idx))}>حذف</button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        {/* مودال اختيار نقطة البداية أو النهاية */}
+        {(showStartMapModal || showEndMapModal) && (
+          <DynamicModal
+            isOpen={showStartMapModal || showEndMapModal}
+            onClose={() => { setShowStartMapModal(false); setShowEndMapModal(false); setTempLatLng(null); setPointName(""); }}
+            title={pointType === 'start' ? "اختر نقطة البداية على الخريطة" : "اختر نقطة النهاية على الخريطة"}
+            schema={{}}
+          >
+            <AdvancedLeafletMap
+              height="400px"
+              showControls={false}
+              onMapClick={({ lat, lng }) => setTempLatLng({ lat, lng })}
+              stops={pointType === 'start' && startPoint ? [startPoint] : pointType === 'end' && endPoint ? [endPoint] : []}
+            />
+            {tempLatLng && (
+              <div className="mt-4 p-4 bg-gray-50 rounded shadow flex flex-col gap-2">
+                <label className="font-bold text-sm">اسم النقطة:</label>
+                <input
+                  type="text"
+                  value={pointName}
+                  onChange={e => setPointName(e.target.value)}
+                  className="border rounded px-2 py-1"
+                  placeholder="ادخل اسم النقطة"
+                />
+                <div className="flex gap-2 mt-2">
+                  <button
+                    className="px-3 py-1 bg-green-600 text-white rounded"
+                    onClick={() => {
+                      if (pointName) {
+                        if (pointType === 'start') setStartPoint({ name: pointName, lat: tempLatLng.lat, long: tempLatLng.lng });
+                        if (pointType === 'end') setEndPoint({ name: pointName, lat: tempLatLng.lat, long: tempLatLng.lng });
+                        setShowStartMapModal(false);
+                        setShowEndMapModal(false);
+                        setTempLatLng(null);
+                        setPointName("");
+                      }
+                    }}
+                    disabled={!pointName}
+                  >
+                    حفظ النقطة
+                  </button>
+                  <button
+                    className="px-3 py-1 bg-gray-300 text-gray-800 rounded"
+                    onClick={() => { setTempLatLng(null); setPointName(""); }}
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </div>
+            )}
+          </DynamicModal>
+        )}
+        {/* مودال إضافة محطة */}
+        {showMapModal && (
+          <DynamicModal isOpen={showMapModal} onClose={() => setShowMapModal(false)} title="اختر موقع المحطة على الخريطة" schema={{}}>
+            <AdvancedLeafletMap
+              height="400px"
+              showControls={false}
+              onMapClick={({ lat, lng }) => {
+                setTempLatLng({ lat, lng });
+                setPointType('stop');
+              }}
+              stops={stops}
+            />
+            {tempLatLng && pointType === 'stop' && (
+              <div className="mt-4 p-4 bg-gray-50 rounded shadow flex flex-col gap-2">
+                <label className="font-bold text-sm">اسم المحطة:</label>
+                <input
+                  type="text"
+                  value={pointName}
+                  onChange={e => setPointName(e.target.value)}
+                  className="border rounded px-2 py-1"
+                  placeholder="ادخل اسم المحطة"
+                />
+                <div className="flex gap-2 mt-2">
+                  <button
+                    className="px-3 py-1 bg-brand-medium-blue text-white rounded"
+                    onClick={() => {
+                      if (pointName) {
+                        setStops([...stops, { name: pointName, lat: tempLatLng.lat, long: tempLatLng.lng }]);
+                        setShowMapModal(false);
+                        setTempLatLng(null);
+                        setPointName("");
+                      }
+                    }}
+                    disabled={!pointName}
+                  >
+                    حفظ المحطة
+                  </button>
+                  <button
+                    className="px-3 py-1 bg-gray-300 text-gray-800 rounded"
+                    onClick={() => { setTempLatLng(null); setPointName(""); }}
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </div>
+            )}
+          </DynamicModal>
+        )}
+      </DynamicModal>
       <DynamicModal
         isOpen={showEditRouteModal}
         onClose={() => { setShowEditRouteModal(false); setEditingRoute(null); }}
@@ -831,6 +1009,23 @@ const AdminDashboard = () => {
         schema={busSchema}
         title="Edit Bus"
         initialData={editingBus}
+      />
+      <DynamicModal
+        isOpen={showEditUserModal}
+        onClose={() => { setShowEditUserModal(false); setEditingUser(null); }}
+        onSubmit={async (data) => {
+          try {
+            await dispatch(updateUser({ id: editingUser._id, userData: data }));
+            setShowEditUserModal(false);
+            setEditingUser(null);
+            dispatch(fetchAllUsers());
+          } catch (err) {
+            alert('حدث خطأ أثناء تعديل المستخدم');
+          }
+        }}
+        schema={userSchema}
+        title="Edit User"
+        initialData={editingUser}
       />
       {routeMsg && <div className="text-center text-sm mt-2 mb-4 font-bold" style={{color: routeMsg.includes('success') ? '#16a34a' : '#dc2626'}}>{routeMsg}</div>}
       {busMsg && <div className="text-center text-sm mt-2 mb-4 font-bold" style={{color: busMsg.includes('success') ? '#16a34a' : '#dc2626'}}>{busMsg}</div>}

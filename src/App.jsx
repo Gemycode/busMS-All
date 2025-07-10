@@ -34,6 +34,9 @@ import AdminBookings from './pages/AdminBookings'
 import BookingReports from './pages/BookingReports'
 import DriverReports from './pages/DriverReports'
 import AttendanceManagement from "./pages/AttendanceManagement"
+import AdminUsers from "./pages/AdminUsers";
+import AdminBuses from "./pages/AdminBuses";
+import AdminRoutes from "./pages/AdminRoutes";
 
 function App() {
   const dispatch = useDispatch();
@@ -93,6 +96,21 @@ useEffect(() => {
         <Route path="/admin/bookings" element={<AdminBookings />} />
         <Route path="/admin/booking-reports" element={<BookingReports />} />
         <Route path="/admin/driver-reports" element={<DriverReports />} />
+        <Route path="/admin/users" element={
+          <RouteGuard allowedRoles={["admin", "manager"]}>
+            <AdminUsers />
+          </RouteGuard>
+        } />
+        <Route path="/admin/buses" element={
+          <RouteGuard allowedRoles={["admin", "manager"]}>
+            <AdminBuses />
+          </RouteGuard>
+        } />
+        <Route path="/admin/routes" element={
+          <RouteGuard allowedRoles={["admin", "manager"]}>
+            <AdminRoutes />
+          </RouteGuard>
+        } />
         <Route path="/attendance" element={
           <RouteGuard allowedRoles={["admin", "manager"]}>
             <AttendanceManagement />

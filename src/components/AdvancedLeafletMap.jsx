@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline, useMap, useMapEvent } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import socketService from '../services/socketService';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchActiveBuses, updateBusLocation } from '../redux/trackingSlice';
 import notificationSound from '../assets/notification.mp3';
+import { GeoSearchControl, OpenStreetMapProvider } from 'leaflet-geosearch';
+import 'leaflet-geosearch/dist/geosearch.css';
 
 // إصلاح مشكلة أيقونات Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -76,6 +78,35 @@ function CoverageArea({ center, radius = 5000 }) {
   );
 }
 
+function SearchControl({ onResult }) {
+  const map = useMap();
+  useEffect(() => {
+    const provider = new OpenStreetMapProvider();
+    const searchControl = new GeoSearchControl({
+      provider,
+      style: 'bar',
+      showMarker: true,
+      showPopup: false,
+      autoClose: true,
+      retainZoomLevel: false,
+      animateZoom: true,
+      keepResult: true,
+      searchLabel: 'ابحث عن مكان...'
+    });
+    map.addControl(searchControl);
+    map.on('geosearch/showlocation', (result) => {
+      if (onResult) {
+        onResult(result.location);
+      }
+    });
+    return () => {
+      map.removeControl(searchControl);
+      map.off('geosearch/showlocation');
+    };
+  }, [map, onResult]);
+  return null;
+}
+
 const AdvancedLeafletMap = ({ 
   height = "600px", 
   showControls = true, 
@@ -86,7 +117,8 @@ const AdvancedLeafletMap = ({
   selectedBusId = null,
   selectedRouteId = null,
   onBusClick = null,
-  buses: propBuses = null
+  buses: propBuses = null,
+  onMapClick = null
 }) => {
   const dispatch = useDispatch();
   const reduxBuses = useSelector(state => state.tracking?.buses);
@@ -931,6 +963,20 @@ const AdvancedLeafletMap = ({
     }
   }, [isTracking, availableBuses.length]);
 
+  useEffect(() => {
+    if (autoCenter && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setMapCenter([pos.coords.latitude, pos.coords.longitude]);
+          setZoom(15);
+        },
+        (err) => {
+          // يمكن تجاهل الخطأ أو إظهار رسالة للمستخدم
+        }
+      );
+    }
+  }, []);
+
   return (
     <>
       <audio ref={audioRef} src={notificationSound} preload="auto" />
@@ -947,7 +993,14 @@ const AdvancedLeafletMap = ({
             url={getTileLayerUrl()}
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
-          
+          {/* دعم البحث الجغرافي */}
+          <SearchControl onResult={({ x: lng, y: lat, label }) => {
+            if (typeof onMapClick === 'function') {
+              onMapClick({ lat, lng, label });
+            }
+          }} />
+          {/* دعم النقر على الخريطة */}
+          {typeof onMapClick === 'function' && <MapClickHandler onMapClick={onMapClick} />}
           {/* تحديث الخريطة تلقائياً */}
           <MapUpdater buses={availableBuses} selectedBusId={selectedBusId} isTracking={isTracking} />
           
@@ -1075,6 +1128,15 @@ const AdvancedLeafletMap = ({
       </div>
     </>
   );
+};
+
+const MapClickHandler = ({ onMapClick }) => {
+  useMapEvent('click', (e) => {
+    if (onMapClick) {
+      onMapClick({ lat: e.latlng.lat, lng: e.latlng.lng });
+    }
+  });
+  return null;
 };
 
 export default AdvancedLeafletMap;
