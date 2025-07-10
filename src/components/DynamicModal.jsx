@@ -7,7 +7,7 @@ const FIELD_TYPES = {
   Email: "email",
 };
 
-const DynamicModal = ({ isOpen, onClose, onSubmit, schema, title, initialData }) => {
+const DynamicModal = ({ isOpen, onClose, onSubmit, schema, title, initialData, children }) => {
   const [form, setForm] = React.useState({});
   const [filePreviews, setFilePreviews] = React.useState({});
 
@@ -83,9 +83,15 @@ const DynamicModal = ({ isOpen, onClose, onSubmit, schema, title, initialData })
                     className="w-full border border-gray-300 rounded px-3 py-2"
                   >
                     <option value="">Select...</option>
-                    {field.options.map((option) => (
-                      <option key={option} value={option}>{option}</option>
-                    ))}
+                    {field.options.map((option) =>
+                      typeof option === "object"
+                        ? (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          )
+                        : (
+                            <option key={option} value={option}>{option}</option>
+                          )
+                    )}
                   </select>
                 </div>
               );
@@ -134,6 +140,7 @@ const DynamicModal = ({ isOpen, onClose, onSubmit, schema, title, initialData })
             </button>
           </div>
         </form>
+        {children}
       </div>
     </div>
   );

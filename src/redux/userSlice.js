@@ -126,6 +126,32 @@ export const addChild = createAsyncThunk(
   }
 );
 
+// Update user by admin
+export const updateUser = createAsyncThunk(
+  'user/updateUser',
+  async ({ id, userData }, { rejectWithValue }) => {
+    try {
+      const res = await api.patch(`/users/${id}`, userData);
+      return res.data.user;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Failed to update user');
+    }
+  }
+);
+
+// Delete user by admin
+export const deleteUser = createAsyncThunk(
+  'user/deleteUser',
+  async (id, { rejectWithValue }) => {
+    try {
+      await api.delete(`/users/${id}`);
+      return id;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Failed to delete user');
+    }
+  }
+);
+
 const initialState = {
   user: JSON.parse(localStorage.getItem('user')) || null,
   token: localStorage.getItem('token') || null,
