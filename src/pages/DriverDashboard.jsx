@@ -11,7 +11,7 @@ const DriverDashboard = () => {
   const dispatch = useDispatch();
   const { user } = useSelector(state => state.user);
   const { userAttendances, loading, error, success } = useSelector(state => state.attendance);
-  
+
   const [currentTrip, setCurrentTrip] = useState(null);
   const [isOnDuty, setIsOnDuty] = useState(false);
   const [location, setLocation] = useState({ lat: 24.7136, lng: 46.6753 }); // Riyadh coordinates
@@ -31,6 +31,9 @@ const DriverDashboard = () => {
     boardingTime: '',
     deboardingTime: ''
   });
+  // --- Attendance for passengers ---
+  const [passengerAttendance, setPassengerAttendance] = useState({}); // { [passengerId]: 'present' | 'absent' }
+  const [routeStats, setRouteStats] = useState({}); // { [routeId]: { present: n, absent: n } }
 
   // Dummy data for demonstration
   const assignedRoutes = [
@@ -109,9 +112,9 @@ const DriverDashboard = () => {
   };
 
   const markPassengerBoarded = (passengerId) => {
-    setPassengers(prev => 
-      prev.map(p => 
-        p.id === passengerId 
+    setPassengers(prev =>
+      prev.map(p =>
+        p.id === passengerId
           ? { ...p, status: 'onboard' }
           : p
       )
@@ -119,9 +122,9 @@ const DriverDashboard = () => {
   };
 
   const markPassengerDropped = (passengerId) => {
-    setPassengers(prev => 
-      prev.map(p => 
-        p.id === passengerId 
+    setPassengers(prev =>
+      prev.map(p =>
+        p.id === passengerId
           ? { ...p, status: 'dropped' }
           : p
       )
@@ -152,30 +155,69 @@ const DriverDashboard = () => {
 
   const handleAttendanceSubmit = (e) => {
     e.preventDefault();
-    const currentTime = new Date().toLocaleTimeString('en-US', { 
-      hour12: false, 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    const currentTime = new Date().toLocaleTimeString('en-US', {
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit'
     });
-    
+
     const submitData = {
       ...attendanceData,
       boardingTime: attendanceData.status === 'present' ? currentTime : '',
       deboardingTime: attendanceData.status === 'absent' ? currentTime : ''
     };
-    
+
     dispatch(createAttendance(submitData));
     setShowAttendanceModal(false);
   };
 
   const getTodayAttendance = () => {
     const today = new Date().toISOString().split('T')[0];
-    return userAttendances.find(att => 
+    return userAttendances.find(att =>
       new Date(att.date).toISOString().split('T')[0] === today
     );
   };
 
   const todayAttendance = getTodayAttendance();
+
+  // Mock API for marking attendance
+  const markAttendanceAPI = async ({ userId, role, routeId, status }) => {
+    // Simulate API call
+    return new Promise((resolve) => setTimeout(() => resolve({ success: true }), 500));
+  };
+
+  // Mark attendance for a passenger
+  const handlePassengerAttendance = async (passengerId, routeId, status) => {
+    await markAttendanceAPI({ userId: passengerId, role: 'passenger', routeId, status });
+    setPassengerAttendance(prev => ({ ...prev, [passengerId]: status }));
+    // Update stats
+    setRouteStats(prev => {
+      const stats = prev[routeId] || { present: 0, absent: 0 };
+      const oldStatus = passengerAttendance[passengerId];
+      let present = stats.present;
+      let absent = stats.absent;
+      if (oldStatus === 'present') present--;
+      if (oldStatus === 'absent') absent--;
+      if (status === 'present') present++;
+      if (status === 'absent') absent++;
+      return { ...prev, [routeId]: { present, absent } };
+    });
+  };
+
+  // Mark attendance for driver
+  const [driverAbsentRoutes, setDriverAbsentRoutes] = useState({}); // { [routeId]: true/false }
+
+  const handleDriverAttendance = async (routeId, status) => {
+    await markAttendanceAPI({ userId: user._id, role: 'driver', routeId, status });
+    setAttendanceData(prev => ({ ...prev, status }));
+    setDriverAbsentRoutes(prev => ({ ...prev, [routeId]: status === 'absent' }));
+  };
+
+  // Fetch live stats (mock)
+  const fetchRouteStats = async (routeId) => {
+    // Simulate API call
+    return { present: Object.values(passengerAttendance).filter(s => s === 'present').length, absent: Object.values(passengerAttendance).filter(s => s === 'absent').length };
+  };
 
   return (
     <div className="font-sans text-gray-800 bg-gray-50 min-h-screen">
@@ -246,10 +288,10 @@ const DriverDashboard = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Current Time</p>
                 <p className="text-2xl font-bold text-brand-dark-blue">
-                  {new Date().toLocaleTimeString('en-US', { 
-                    hour: '2-digit', 
+                  {new Date().toLocaleTimeString('en-US', {
+                    hour: '2-digit',
                     minute: '2-digit',
-                    hour12: true 
+                    hour12: true
                   })}
                 </p>
               </div>
@@ -290,15 +332,14 @@ const DriverDashboard = () => {
                             {route.startLocation} → {route.endLocation}
                           </p>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          route.status === 'active' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${route.status === 'active'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                          }`}>
                           {route.status}
                         </span>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-4 mb-4">
                         <div>
                           <p className="text-xs text-gray-500">Schedule</p>
@@ -328,16 +369,18 @@ const DriverDashboard = () => {
                             End Trip
                           </button>
                         ) : (
-                          <button
-                            onClick={() => startTrip(route.id)}
-                            disabled={currentTrip !== null}
-                            className="flex-1 bg-brand-medium-blue hover:bg-brand-dark-blue text-white py-2 px-4 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <i className="fas fa-play mr-2"></i>
-                            Start Trip
-                          </button>
+                          !driverAbsentRoutes[route.id] && (
+                            <button
+                              onClick={() => startTrip(route.id)}
+                              disabled={currentTrip !== null}
+                              className="flex-1 bg-brand-medium-blue hover:bg-brand-dark-blue text-white py-2 px-4 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <i className="fas fa-play mr-2"></i>
+                              Start Trip
+                            </button>
+                          )
                         )}
-                        
+
                         <Link
                           to={`/map-view?route=${route.id}`}
                           className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-md text-sm font-medium transition-colors text-center"
@@ -345,6 +388,28 @@ const DriverDashboard = () => {
                           <i className="fas fa-map mr-2"></i>
                           View Map
                         </Link>
+                      </div>
+
+                      {/* Driver Attendance for each route */}
+                      <div className="flex space-x-2 mt-2">
+                        <button
+                          onClick={() => handleDriverAttendance(route.id, 'present')}
+                          className={`px-3 py-1 rounded text-xs font-medium ${attendanceData.status === 'present' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                        >
+                          Mark Myself attendant
+                        </button>
+                        <button
+                          onClick={() => handleDriverAttendance(route.id, 'absent')}
+                          className={`px-3 py-1 rounded text-xs font-medium ${attendanceData.status === 'absent' ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                        >
+                          Mark Myself Absent
+                        </button>
+                      </div>
+                      {/* Live stats */}
+                      <div className="mt-2 text-sm">
+                        <span className="font-medium">Live Attendance:</span>
+                        <span className="ml-2 text-green-600">attendant: {routeStats[route.id]?.present || 0}</span>
+                        <span className="ml-2 text-red-600">Absent: {routeStats[route.id]?.absent || 0}</span>
                       </div>
                     </div>
                   ))}
@@ -415,31 +480,20 @@ const DriverDashboard = () => {
                         <p className="text-xs text-gray-600">{passenger.grade} • {passenger.pickupTime}</p>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          passenger.status === 'onboard' 
-                            ? 'bg-green-100 text-green-800'
-                            : passenger.status === 'dropped'
-                            ? 'bg-gray-100 text-gray-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {passenger.status}
-                        </span>
-                        {passenger.status === 'waiting' && (
-                          <button
-                            onClick={() => markPassengerBoarded(passenger.id)}
-                            className="text-green-600 hover:text-green-800"
-                          >
-                            <i className="fas fa-check"></i>
-                          </button>
-                        )}
-                        {passenger.status === 'onboard' && (
-                          <button
-                            onClick={() => markPassengerDropped(passenger.id)}
-                            className="text-blue-600 hover:text-blue-800"
-                          >
-                            <i className="fas fa-user-minus"></i>
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handlePassengerAttendance(passenger.id, currentTrip?.id || assignedRoutes[0].id, 'present')}
+                          className={`px-2 py-1 rounded text-xs font-medium ${passengerAttendance[passenger.id] === 'present' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                        >
+                          attendant
+                        </button>
+                        <button
+                          onClick={() => handlePassengerAttendance(passenger.id, currentTrip?.id || assignedRoutes[0].id, 'absent')}
+                          className={`px-2 py-1 rounded text-xs font-medium ${passengerAttendance[passenger.id] === 'absent' ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                        >
+                          Absent
+                        </button>
+                        {passengerAttendance[passenger.id] === 'present' && <span className="ml-2 text-green-600">✅</span>}
+                        {passengerAttendance[passenger.id] === 'absent' && <span className="ml-2 text-red-600">❌</span>}
                       </div>
                     </div>
                   ))}
@@ -457,10 +511,9 @@ const DriverDashboard = () => {
                 <div className="space-y-3">
                   {notifications.map((notification) => (
                     <div key={notification.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                      <div className={`h-2 w-2 rounded-full mt-2 ${
-                        notification.type === 'warning' ? 'bg-yellow-500' :
+                      <div className={`h-2 w-2 rounded-full mt-2 ${notification.type === 'warning' ? 'bg-yellow-500' :
                         notification.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
-                      }`}></div>
+                        }`}></div>
                       <div className="flex-1">
                         <p className="text-sm text-gray-800">{notification.message}</p>
                         <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
@@ -512,7 +565,7 @@ const DriverDashboard = () => {
               <h3 className="text-lg font-medium text-gray-900 mb-4">
                 Log Attendance
               </h3>
-              
+
               <form onSubmit={handleAttendanceSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -521,19 +574,19 @@ const DriverDashboard = () => {
                   <input
                     type="date"
                     value={attendanceData.date}
-                    onChange={(e) => setAttendanceData({...attendanceData, date: e.target.value})}
+                    onChange={(e) => setAttendanceData({ ...attendanceData, date: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Status
                   </label>
                   <select
                     value={attendanceData.status}
-                    onChange={(e) => setAttendanceData({...attendanceData, status: e.target.value})}
+                    onChange={(e) => setAttendanceData({ ...attendanceData, status: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   >
@@ -541,7 +594,7 @@ const DriverDashboard = () => {
                     <option value="absent">Absent</option>
                   </select>
                 </div>
-                
+
                 <div className="flex space-x-3 pt-4">
                   <button
                     type="submit"
