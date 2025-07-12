@@ -1,16 +1,21 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { Link } from "react-router-dom"
 import DynamicModal from "../components/DynamicModal"
 import { userSchema, busSchema, routeSchema } from "../components/schemas"
-import { fetchBuses, updateBus, deleteBus, clearMessage as clearBusMessage, createBus } from "../redux/BusSlice"
+import { fetchBuses, updateBus, deleteBus, clearMessage as clearBusMessage, createBus } from "../redux/busSlice"
 import { fetchRoutes, createRoute, updateRoute, deleteRoute, clearMessage as clearRouteMessage } from "../redux/routesSlice"
 import { fetchAllUsers, registerUser, updateUser, deleteUser } from "../redux/userSlice"
 import dayjs from "dayjs"
 import { fetchAttendanceStats } from "../redux/attendanceSlice"
 import AdvancedLeafletMap from "../components/AdvancedLeafletMap";
+import { Line } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
+import axios from 'axios';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 const AdminDashboard = () => {
   const token = localStorage.getItem('token');
@@ -68,19 +73,211 @@ const AdminDashboard = () => {
   const [pointName, setPointName] = useState("");
   const [pointType, setPointType] = useState(null); // 'start' or 'end'
 
+  const [trendData, setTrendData] = useState(null);
+
+  useEffect(() => {
+    axios.get('/api/dashboard/trends')
+      .then(res => setTrendData(res.data))
+      .catch(err => console.error('Trend API error:', err));
+  }, []);
+
   const previousRoutesCount = routes?.filter(route => dayjs(route.createdAt).isBefore(dayjs().subtract(1, 'day'))).length ?? 0;
 
   // Get drivers from allUsers
   const drivers = allUsers?.filter(user => user.role === 'driver') || [];
 
-  // Update stats when routes or buses change
+  // اجمع البيانات الحقيقية من Redux
+  const totalStudents = allUsers?.filter(u => u.role === 'student').length || 0;
+  const totalParents = allUsers?.filter(u => u.role === 'parent').length || 0;
+  const totalDrivers = allUsers?.filter(u => u.role === 'driver').length || 0;
+  const totalBuses = buses?.length || 0;
+  const totalRoutes = routes?.length || 0;
+  const attendanceRate = attendanceStats?.attendanceRate || 0;
+
+  // بيانات اليوم فقط (يمكنكِ لاحقًا عمل trend حسب الأيام)
+  const labels = [new Date().toLocaleDateString()];
+
+  const lineData = trendData ? {
+    labels: trendData.labels,
+    datasets: [
+      {
+        label: 'Attendance Rate (%)',
+        data: trendData.attendance,
+        borderColor: '#2563eb',
+        backgroundColor: '#2563eb',
+        pointBackgroundColor: '#2563eb',
+        pointBorderColor: '#fff',
+        pointRadius: 5,
+        pointHoverRadius: 8,
+        borderWidth: 2.5,
+        tension: 0.4,
+        fill: false,
+        pointStyle: 'circle',
+      },
+      {
+        label: 'Students',
+        data: trendData.students,
+        borderColor: '#22c55e',
+        backgroundColor: '#22c55e',
+        pointBackgroundColor: '#22c55e',
+        pointBorderColor: '#fff',
+        pointRadius: 5,
+        pointHoverRadius: 8,
+        borderWidth: 2.5,
+        tension: 0.4,
+        fill: false,
+        pointStyle: 'circle',
+      },
+      {
+        label: 'Buses',
+        data: trendData.buses,
+        borderColor: '#f59e42',
+        backgroundColor: '#f59e42',
+        pointBackgroundColor: '#f59e42',
+        pointBorderColor: '#fff',
+        pointRadius: 5,
+        pointHoverRadius: 8,
+        borderWidth: 2.5,
+        tension: 0.4,
+        fill: false,
+        pointStyle: 'circle',
+      },
+      {
+        label: 'Routes',
+        data: trendData.routes,
+        borderColor: '#a21caf',
+        backgroundColor: '#a21caf',
+        pointBackgroundColor: '#a21caf',
+        pointBorderColor: '#fff',
+        pointRadius: 5,
+        pointHoverRadius: 8,
+        borderWidth: 2.5,
+        tension: 0.4,
+        fill: false,
+        pointStyle: 'circle',
+      },
+      {
+        label: 'Parents',
+        data: trendData.parents,
+        borderColor: '#eab308',
+        backgroundColor: '#eab308',
+        pointBackgroundColor: '#eab308',
+        pointBorderColor: '#fff',
+        pointRadius: 5,
+        pointHoverRadius: 8,
+        borderWidth: 2.5,
+        tension: 0.4,
+        fill: false,
+        pointStyle: 'circle',
+      },
+      {
+        label: 'Drivers',
+        data: trendData.drivers,
+        borderColor: '#0ea5e9',
+        backgroundColor: '#0ea5e9',
+        pointBackgroundColor: '#0ea5e9',
+        pointBorderColor: '#fff',
+        pointRadius: 5,
+        pointHoverRadius: 8,
+        borderWidth: 2.5,
+        tension: 0.4,
+        fill: false,
+        pointStyle: 'circle',
+      },
+    ],
+  } : null;
+
+  const tooltipDescriptions = {
+    'Attendance Rate (%)': value => `${value}% ${value >= 95 ? '(ممتاز)' : value >= 90 ? '(جيد جداً)' : value >= 80 ? '(جيد)' : '(يحتاج تحسين)'}`,
+    'Students': value => `${value} طالب`,
+    'Buses': value => `${value} حافلة`,
+    'Routes': value => `${value} خط`,
+    'Parents': value => `${value} ولي أمر`,
+    'Drivers': value => `${value} سائق`
+  };
+
+  const lineOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+        labels: {
+          usePointStyle: true,
+          pointStyle: 'circle',
+          padding: 16,
+          font: { size: 13, family: 'inherit', weight: 'bold' }
+        }
+      },
+      title: {
+        display: true,
+        text: 'System Overview',
+        color: '#2563eb',
+        font: { size: 20, weight: 'bold', family: 'inherit' },
+        align: 'start',
+        padding: { bottom: 10 }
+      },
+      tooltip: {
+        backgroundColor: '#fff',
+        titleColor: '#2563eb',
+        bodyColor: '#222',
+        borderColor: '#2563eb',
+        borderWidth: 1,
+        padding: 12,
+        cornerRadius: 10,
+        displayColors: true,
+        callbacks: {
+          title: (items) => `Date: ${items[0].label}`,
+          label: (ctx) => {
+            const label = ctx.dataset.label;
+            const value = ctx.parsed.y;
+            if (tooltipDescriptions[label]) {
+              return `${label}: ${tooltipDescriptions[label](value)}`;
+            }
+            return `${label}: ${value}`;
+          }
+        },
+        titleFont: { weight: 'bold', family: 'inherit' },
+        bodyFont: { family: 'inherit' },
+      }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: {
+          color: '#2563eb',
+          font: { family: 'inherit', weight: 'bold', size: 13 },
+          padding: 6
+        }
+      },
+      y: {
+        grid: {
+          color: 'rgba(37,99,235,0.08)',
+          borderDash: [4, 4],
+          drawBorder: false
+        },
+        ticks: {
+          color: '#64748b',
+          font: { family: 'inherit', size: 13 },
+          padding: 6
+        },
+        beginAtZero: true
+      }
+    },
+    animation: { duration: 900, easing: 'easeOutQuart' }
+  };
+
+  const chartRef = useRef();
+
+  // Update stats when routes, buses, or users change
   useEffect(() => {
     setStats(prevStats => ({
       ...prevStats,
+      totalUsers: allUsers?.length ?? 0,
       totalRoutes: routes?.length ?? 0,
       activeBuses: buses?.filter(bus => bus.status === 'active').length ?? 0,
     }))
-  }, [routes, buses])
+  }, [routes, buses, allUsers])
 
   // Clear messages after 3 seconds
   useEffect(() => {
@@ -106,49 +303,314 @@ const AdminDashboard = () => {
     dispatch(fetchBuses());
     dispatch(fetchRoutes());
     dispatch(fetchAllUsers());
-    // Simulate loading dashboard data
-    setTimeout(() => {
-      setStats(prevStats => ({
-        ...prevStats,
-        totalUsers: 15847,
-        systemUptime: 99.8,
-      }))
-      setRecentActivity([
-        {
-          id: 1,
-          type: "user_created",
-          message: "New parent account created: Sarah Johnson",
-          time: "2 minutes ago",
-          icon: "fa-user-plus",
-          color: "text-green-600",
-        },
-        {
-          id: 2,
-          type: "route_updated",
-          message: "Route #42 schedule updated by Manager Davis",
-          time: "15 minutes ago",
-          icon: "fa-route",
-          color: "text-blue-600",
-        },
-        {
-          id: 3,
-          type: "system_alert",
-          message: "Bus #1087 maintenance reminder triggered",
-          time: "1 hour ago",
-          icon: "fa-exclamation-triangle",
-          color: "text-yellow-600",
-        },
-        {
-          id: 4,
-          type: "driver_assigned",
-          message: "Driver John Smith assigned to Route #15",
-          time: "2 hours ago",
-          icon: "fa-id-badge",
-          color: "text-purple-600",
-        },
-      ])
-    }, 1000)
+    // Generate dynamic recent activity based on actual data
+    const generateRecentActivity = () => {
+      const activities = [];
+      
+      // Add user activities
+      if (allUsers && allUsers.length > 0) {
+        const recentUsers = allUsers.slice(0, 2);
+        recentUsers.forEach((user, index) => {
+          activities.push({
+            id: `user_${index}`,
+            type: "user_created",
+            message: `New ${user.role} account created: ${user.firstName} ${user.lastName}`,
+            time: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Recently",
+            icon: "fa-user-plus",
+            color: "text-green-600",
+          });
+        });
+      }
+      
+      // Add bus activities
+      if (buses && buses.length > 0) {
+        const recentBuses = buses.slice(0, 2);
+        recentBuses.forEach((bus, index) => {
+          activities.push({
+            id: `bus_${index}`,
+            type: "bus_added",
+            message: `Bus #${bus.BusNumber} added to system`,
+            time: bus.createdAt ? new Date(bus.createdAt).toLocaleDateString() : "Recently",
+            icon: "fa-bus",
+            color: "text-blue-600",
+          });
+        });
+      }
+      
+      // Add route activities
+      if (routes && routes.length > 0) {
+        const recentRoutes = routes.slice(0, 2);
+        recentRoutes.forEach((route, index) => {
+          activities.push({
+            id: `route_${index}`,
+            type: "route_created",
+            message: `Route "${route.name}" created`,
+            time: route.createdAt ? new Date(route.createdAt).toLocaleDateString() : "Recently",
+            icon: "fa-route",
+            color: "text-purple-600",
+          });
+        });
+      }
+      
+      // Add system health activities
+      activities.push({
+        id: "system_health",
+        type: "system_alert",
+        message: `System running with ${stats.totalUsers} users, ${stats.activeBuses} active buses`,
+        time: "Live",
+        icon: "fa-heartbeat",
+        color: "text-green-600",
+      });
+      
+      return activities.slice(0, 5); // Limit to 5 activities
+    };
+    
+    setRecentActivity(generateRecentActivity());
   }, [dispatch])
+
+  // Update recent activity when data changes
+  useEffect(() => {
+    const generateRecentActivity = () => {
+      const activities = [];
+      
+      // Add user activities
+      if (allUsers && allUsers.length > 0) {
+        const recentUsers = allUsers.slice(0, 2);
+        recentUsers.forEach((user, index) => {
+          activities.push({
+            id: `user_${index}`,
+            type: "user_created",
+            message: `New ${user.role} account created: ${user.firstName} ${user.lastName}`,
+            time: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Recently",
+            icon: "fa-user-plus",
+            color: "text-green-600",
+          });
+        });
+      }
+      
+      // Add bus activities
+      if (buses && buses.length > 0) {
+        const recentBuses = buses.slice(0, 2);
+        recentBuses.forEach((bus, index) => {
+          activities.push({
+            id: `bus_${index}`,
+            type: "bus_added",
+            message: `Bus #${bus.BusNumber} added to system`,
+            time: bus.createdAt ? new Date(bus.createdAt).toLocaleDateString() : "Recently",
+            icon: "fa-bus",
+            color: "text-blue-600",
+          });
+        });
+      }
+      
+      // Add route activities
+      if (routes && routes.length > 0) {
+        const recentRoutes = routes.slice(0, 2);
+        recentRoutes.forEach((route, index) => {
+          activities.push({
+            id: `route_${index}`,
+            type: "route_created",
+            message: `Route "${route.name}" created`,
+            time: route.createdAt ? new Date(route.createdAt).toLocaleDateString() : "Recently",
+            icon: "fa-route",
+            color: "text-purple-600",
+          });
+        });
+      }
+      
+      // Add system health activities
+      activities.push({
+        id: "system_health",
+        type: "system_alert",
+        message: `System running with ${stats.totalUsers} users, ${stats.activeBuses} active buses`,
+        time: "Live",
+        icon: "fa-heartbeat",
+        color: "text-green-600",
+      });
+      
+      return activities.slice(0, 5); // Limit to 5 activities
+    };
+    
+    setRecentActivity(generateRecentActivity());
+  }, [allUsers, buses, routes, stats.totalUsers, stats.activeBuses])
+
+  // استخدم فقط:
+  // - totalStudents, totalParents, totalDrivers, totalBuses, totalRoutes, attendanceRate
+  // - labels
+  // - lineData
+  // - lineOptions
+  // - chartRef
+  const totalStudentsTrend = allUsers?.filter(u => u.role === 'student').length || 0;
+  const totalParentsTrend = allUsers?.filter(u => u.role === 'parent').length || 0;
+  const totalDriversTrend = allUsers?.filter(u => u.role === 'driver').length || 0;
+  const totalBusesTrend = buses?.length || 0;
+  const totalRoutesTrend = routes?.length || 0;
+  const attendanceRateTrend = attendanceStats?.attendanceRate || 0;
+
+  // بيانات اليوم فقط (يمكنكِ لاحقًا عمل trend حسب الأيام)
+  const labelsTrend = [new Date().toLocaleDateString()];
+
+  const attendanceTrend = [attendanceRateTrend];
+  const studentsTrend   = [totalStudentsTrend];
+  const busesTrend      = [totalBusesTrend];
+  const routesTrend     = [totalRoutesTrend];
+  const parentsTrend    = [totalParentsTrend];
+  const driversTrend    = [totalDriversTrend];
+
+  const lineDataTrend = {
+    labels,
+    datasets: [
+      {
+        label: 'Attendance Rate (%)',
+        data: attendanceTrend,
+        borderColor: 'rgb(37, 99, 235)',
+        backgroundColor: 'rgba(37,99,235,0.08)',
+        pointBackgroundColor: '#fff',
+        pointBorderColor: 'rgb(37, 99, 235)',
+        pointRadius: 0,
+        pointHoverRadius: 7,
+        borderWidth: 3,
+        tension: 0.5,
+        fill: false,
+        pointStyle: 'circle',
+      },
+      {
+        label: 'Students',
+        data: studentsTrend,
+        borderColor: '#f59e42',
+        backgroundColor: 'rgba(245,158,66,0.08)',
+        pointBackgroundColor: '#fff',
+        pointBorderColor: '#f59e42',
+        pointRadius: 0,
+        pointHoverRadius: 7,
+        borderWidth: 3,
+        tension: 0.5,
+        fill: false,
+        pointStyle: 'circle',
+      },
+      {
+        label: 'Buses',
+        data: busesTrend,
+        borderColor: '#16a34a',
+        backgroundColor: 'rgba(22,163,74,0.08)',
+        pointBackgroundColor: '#fff',
+        pointBorderColor: '#16a34a',
+        pointRadius: 0,
+        pointHoverRadius: 7,
+        borderWidth: 3,
+        tension: 0.5,
+        fill: false,
+        pointStyle: 'circle',
+      },
+      {
+        label: 'Routes',
+        data: routesTrend,
+        borderColor: '#a21caf',
+        backgroundColor: 'rgba(162,28,175,0.08)',
+        pointBackgroundColor: '#fff',
+        pointBorderColor: '#a21caf',
+        pointRadius: 0,
+        pointHoverRadius: 7,
+        borderWidth: 3,
+        tension: 0.5,
+        fill: false,
+        pointStyle: 'circle',
+      },
+      {
+        label: 'Parents',
+        data: parentsTrend,
+        borderColor: '#eab308',
+        backgroundColor: 'rgba(234,179,8,0.08)',
+        pointBackgroundColor: '#fff',
+        pointBorderColor: '#eab308',
+        pointRadius: 0,
+        pointHoverRadius: 7,
+        borderWidth: 3,
+        tension: 0.5,
+        fill: false,
+        pointStyle: 'circle',
+      },
+      {
+        label: 'Drivers',
+        data: driversTrend,
+        borderColor: '#0ea5e9',
+        backgroundColor: 'rgba(14,165,233,0.08)',
+        pointBackgroundColor: '#fff',
+        pointBorderColor: '#0ea5e9',
+        pointRadius: 0,
+        pointHoverRadius: 7,
+        borderWidth: 3,
+        tension: 0.5,
+        fill: false,
+        pointStyle: 'circle',
+      },
+    ],
+  };
+
+  const lineOptionsTrend = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      title: {
+        display: true,
+        text: 'Attendance Rate (Last 7 Days)',
+        color: '#2563eb',
+        font: { size: 18, weight: 'bold', family: 'inherit' },
+        align: 'start',
+        padding: { bottom: 16 }
+      },
+      tooltip: {
+        backgroundColor: '#fff',
+        titleColor: '#2563eb',
+        bodyColor: '#222',
+        borderColor: '#2563eb',
+        borderWidth: 1,
+        padding: 14,
+        cornerRadius: 10,
+        displayColors: false,
+        callbacks: {
+          label: (ctx) => `📈 Attendance: ${ctx.parsed.y}%`
+        },
+        titleFont: { weight: 'bold', family: 'inherit' },
+        bodyFont: { family: 'inherit' },
+      }
+    },
+    layout: {
+      padding: { left: 0, right: 0, top: 0, bottom: 0 }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: {
+          color: '#2563eb',
+          font: { family: 'inherit', weight: 'bold' },
+          padding: 6
+        }
+      },
+      y: {
+        grid: {
+          color: 'rgba(37,99,235,0.08)',
+          borderDash: [4, 4],
+          drawBorder: false
+        },
+        ticks: {
+          color: '#64748b',
+          font: { family: 'inherit' },
+          padding: 6
+        },
+        min: 80,
+        max: 100,
+        border: { display: false }
+      }
+    },
+    animation: {
+      duration: 1200,
+      easing: 'easeOutQuart'
+    }
+  };
+
+  const chartRefTrend = useRef();
 
   return (
     <div className="font-sans text-gray-800 bg-gray-50 min-h-screen">
@@ -195,9 +657,11 @@ const AdminDashboard = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-500">Total Users</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.totalUsers.toLocaleString()}</p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {allUsers?.length?.toLocaleString() || 0}
+                    </p>
                     <p className="text-sm text-green-600">
-                      <i className="fas fa-arrow-up mr-1"></i>+12% from last month
+                      <i className="fas fa-arrow-up mr-1"></i>{allUsers?.length || 0} total users
                     </p>
                   </div>
                   <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -212,7 +676,7 @@ const AdminDashboard = () => {
                     <p className="text-sm font-medium text-gray-500">Active Buses</p>
                     <p className="text-3xl font-bold text-gray-900">{stats.activeBuses}</p>
                     <p className="text-sm text-green-600">
-                      <i className="fas fa-arrow-up mr-1"></i>+5% from last month
+                      <i className="fas fa-arrow-up mr-1"></i>{buses?.filter(bus => bus.status === 'active').length || 0} active buses
                     </p>
                   </div>
                   <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
@@ -272,27 +736,27 @@ const AdminDashboard = () => {
                   </div>
 
                   {/* Chart Placeholder */}
-                  <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center mb-6">
-                    <div className="text-center">
-                      <i className="fas fa-chart-line text-4xl text-gray-400 mb-2"></i>
-                      <p className="text-gray-600">System Performance Chart</p>
-                      <p className="text-sm text-gray-500">Real-time analytics would be displayed here</p>
-                    </div>
+                  <div className="h-80 bg-white rounded-xl flex items-center justify-center mb-6 shadow border border-blue-100">
+                    {lineData ? (
+                      <Line data={lineData} options={lineOptions} />
+                    ) : (
+                      <span className="text-gray-400">Loading chart data...</span>
+                    )}
                   </div>
 
                   {/* Quick Stats */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="text-center p-4 bg-gray-50 rounded-lg">
-                      <p className="text-2xl font-bold text-brand-medium-blue">98.5%</p>
-                      <p className="text-sm text-gray-600">On-Time Performance</p>
+                      <p className="text-2xl font-bold text-brand-medium-blue">{attendanceStats?.attendanceRate || 0}%</p>
+                      <p className="text-sm text-gray-600">Attendance Rate</p>
                     </div>
                     <div className="text-center p-4 bg-gray-50 rounded-lg">
-                      <p className="text-2xl font-bold text-green-600">2.3M</p>
-                      <p className="text-sm text-gray-600">Miles Driven</p>
+                      <p className="text-2xl font-bold text-green-600">{routes?.length || 0}</p>
+                      <p className="text-sm text-gray-600">Total Routes</p>
                     </div>
                     <div className="text-center p-4 bg-gray-50 rounded-lg">
-                      <p className="text-2xl font-bold text-purple-600">45K</p>
-                      <p className="text-sm text-gray-600">Students Transported</p>
+                      <p className="text-2xl font-bold text-purple-600">{buses?.length || 0}</p>
+                      <p className="text-sm text-gray-600">Total Buses</p>
                     </div>
                   </div>
 
@@ -334,56 +798,56 @@ const AdminDashboard = () => {
                       <div>Loading...</div>
                     ) : allUsers && allUsers.length > 0 ? (
                       <>
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                User
-                              </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Role
-                              </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Status
-                              </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Last Active
-                              </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Actions
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            User
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Role
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Last Active
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
                             {allUsers.slice(0, 5).map((user) => (
                               <tr key={user._id}>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="flex items-center">
-                                    <div className="h-8 w-8 rounded-full bg-brand-beige flex items-center justify-center mr-3">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="h-8 w-8 rounded-full bg-brand-beige flex items-center justify-center mr-3">
                                       <span className="text-sm font-medium text-brand-dark-blue">
                                         {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
                                       </span>
-                                    </div>
-                                    <div>
+                              </div>
+                              <div>
                                       <div className="text-sm font-medium text-gray-900">{user.firstName} {user.lastName}</div>
                                       <div className="text-sm text-gray-500">{user.email}</div>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
                                     {user.role}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                                    Active
-                                  </span>
-                                </td>
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                              Active
+                            </span>
+                          </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                   {user.updatedAt ? new Date(user.updatedAt).toLocaleDateString() : '-'}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                   <button className="text-brand-medium-blue hover:text-brand-dark-blue mr-3" onClick={() => { setEditingUser(user); setShowEditUserModal(true); }}>Edit</button>
                                   <button className="text-red-600 hover:text-red-900" onClick={async () => {
                                     if(window.confirm('هل أنت متأكد أنك تريد حذف هذا المستخدم؟')) {
@@ -391,11 +855,11 @@ const AdminDashboard = () => {
                                       dispatch(fetchAllUsers());
                                     }
                                   }}>Delete</button>
-                                </td>
-                              </tr>
+                          </td>
+                        </tr>
                             ))}
-                          </tbody>
-                        </table>
+                      </tbody>
+                    </table>
                       </>
                     ) : (
                       <div>No users found.</div>
@@ -543,27 +1007,27 @@ const AdminDashboard = () => {
                   <h2 className="text-xl font-bold text-brand-dark-blue mb-6">System Health</h2>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Database</span>
-                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                        Healthy
+                      <span className="text-sm text-gray-600">Users Data</span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${usersLoading ? 'bg-yellow-100 text-yellow-800' : allUsers && allUsers.length > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {usersLoading ? 'Loading...' : allUsers && allUsers.length > 0 ? 'Healthy' : 'No Data'}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">API Services</span>
-                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                        Healthy
+                      <span className="text-sm text-gray-600">Buses Data</span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${busesLoading ? 'bg-yellow-100 text-yellow-800' : buses && buses.length > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {busesLoading ? 'Loading...' : buses && buses.length > 0 ? 'Healthy' : 'No Data'}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">GPS Tracking</span>
-                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
-                        Warning
+                      <span className="text-sm text-gray-600">Routes Data</span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${routesLoading ? 'bg-yellow-100 text-yellow-800' : routes && routes.length > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {routesLoading ? 'Loading...' : routes && routes.length > 0 ? 'Healthy' : 'No Data'}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Notifications</span>
-                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                        Healthy
+                      <span className="text-sm text-gray-600">Attendance Data</span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${attendanceStats && attendanceStats.total > 0 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                        {attendanceStats && attendanceStats.total > 0 ? 'Healthy' : 'No Data'}
                       </span>
                     </div>
                   </div>

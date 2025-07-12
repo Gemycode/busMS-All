@@ -9,13 +9,13 @@ const Home = () => {
   const [showToast, setShowToast] = useState(false)
 
   useEffect(() => {
-    // Show notification after 3 seconds
-    const timer = setTimeout(() => {
-      setShowToast(true)
-    }, 3000)
-
-    return () => clearTimeout(timer)
-  }, [])
+    // تحقق من وجود رسالة التوست بعد redirect
+    if (localStorage.getItem("showLoginToast") === "1") {
+      setShowToast(true);
+      localStorage.removeItem("showLoginToast");
+      setTimeout(() => setShowToast(false), 2000);
+    }
+  }, []);
 
   return (
     <div className="font-sans text-gray-800 bg-gray-50">
@@ -299,9 +299,7 @@ const Home = () => {
       </section>
 
       {/* Toast Notification */}
-      {showToast && (
-        <Toast message="Explore our features and request a demo today!" onClose={() => setShowToast(false)} />
-      )}
+      {showToast && <Toast message="you are already logged in" type="info" />}
     </div>
   )
 }
