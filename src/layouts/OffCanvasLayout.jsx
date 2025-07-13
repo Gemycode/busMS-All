@@ -1,7 +1,8 @@
 import OffCanvasSidebar from "../components/OffCanvasSidebar";
 import { Outlet } from "react-router-dom";
-import { FaHome, FaUsers, FaBus, FaRoute, FaChartBar } from "react-icons/fa";
+import { FaHome, FaUsers, FaBus, FaRoute, FaChartBar, FaClipboardCheck, FaUser, FaBell, FaMapMarkerAlt, FaChild, FaTicketAlt } from "react-icons/fa";
 import { useState } from "react";
+import { useSelector } from "react-redux";
 
 const adminButtons = [
   { icon: <FaHome />, label: "Dashboard", page: "/admin-dashboard" },
@@ -11,11 +12,52 @@ const adminButtons = [
   { icon: <FaChartBar />, label: "Reports", page: "/admin/reports" },
 ];
 
+const managerButtons = [
+  { icon: <FaHome />, label: "Dashboard", page: "/manager-dashboard" },
+  { icon: <FaRoute />, label: "Routes", page: "/manager/routes" },
+  { icon: <FaClipboardCheck />, label: "Attendance", page: "/attendance" },
+  { icon: <FaUsers />, label: "Drivers", page: "/manager/drivers" },
+  { icon: <FaChartBar />, label: "Reports", page: "/manager/reports" },
+];
+
+const driverButtons = [
+  { icon: <FaHome />, label: "Dashboard", page: "/driver-dashboard" },
+  { icon: <FaMapMarkerAlt />, label: "Live Tracking", page: "/map-view" },
+  { icon: <FaClipboardCheck />, label: "Attendance", page: "/attendance" },
+  { icon: <FaUser />, label: "Profile", page: "/driver-profile" },
+  { icon: <FaBell />, label: "Notifications", page: "/notifications" },
+];
+
+const parentButtons = [
+  { icon: <FaHome />, label: "Dashboard", page: "/parent-dashboard" },
+  { icon: <FaChild />, label: "Children", page: "/children" },
+  { icon: <FaBell />, label: "Notifications", page: "/notifications" },
+  { icon: <FaTicketAlt />, label: "Book Trip", page: "/booking" },
+  { icon: <FaMapMarkerAlt />, label: "Tracking", page: "/tracking" },
+  { icon: <FaUser />, label: "Profile", page: "/profile" },
+];
+
+const userButtons = [
+  { icon: <FaHome />, label: "Dashboard", page: "/dashboard/user" },
+  { icon: <FaTicketAlt />, label: "Book Trip", page: "/booking" },
+  { icon: <FaMapMarkerAlt />, label: "Live Tracking", page: "/map-view" },
+  { icon: <FaUser />, label: "Profile", page: "/profile" },
+  { icon: <FaBell />, label: "Notifications", page: "/notifications" },
+];
+
 export default function OffCanvasLayout() {
   const [collapsed, setCollapsed] = useState(false);
+  const user = useSelector((state) => state.user.user);
+  let buttons = [];
+  if (user?.role === "admin") buttons = adminButtons;
+  else if (user?.role === "manager") buttons = managerButtons;
+  else if (user?.role === "driver") buttons = driverButtons;
+  else if (user?.role === "parent") buttons = parentButtons;
+  else if (user?.role === "user" || user?.role === "student") buttons = userButtons;
+
   return (
     <div className="min-h-screen">
-      <OffCanvasSidebar buttons={adminButtons} collapsed={collapsed} setCollapsed={setCollapsed} />
+      <OffCanvasSidebar buttons={buttons} collapsed={collapsed} setCollapsed={setCollapsed} />
       <main
         className="bg-gray-50 min-h-screen transition-all duration-300"
         style={{
