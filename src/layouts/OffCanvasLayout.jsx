@@ -23,7 +23,6 @@ const managerButtons = [
 const driverButtons = [
   { icon: <FaHome />, label: "Dashboard", page: "/driver-dashboard" },
   { icon: <FaMapMarkerAlt />, label: "Live Tracking", page: "/map-view" },
-  { icon: <FaClipboardCheck />, label: "Attendance", page: "/attendance" },
   { icon: <FaUser />, label: "Profile", page: "/driver-profile" },
   { icon: <FaBell />, label: "Notifications", page: "/notifications" },
 ];

@@ -6,7 +6,7 @@ export const fetchBuses = createAsyncThunk(
   async (_, thunkAPI) => {
     try {
       const res = await api.get("/buses/all");
-      return res.data;
+      return res.data; // الريسبونس مصفوفة مباشرة
     } catch (err) {
       return thunkAPI.rejectWithValue(err.response?.data?.message || "Error fetching buses");
     }

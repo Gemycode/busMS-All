@@ -81,17 +81,17 @@ const AdminDashboard = () => {
       .catch(err => console.error('Trend API error:', err));
   }, []);
 
-  const previousRoutesCount = routes?.filter(route => dayjs(route.createdAt).isBefore(dayjs().subtract(1, 'day'))).length ?? 0;
+  const previousRoutesCount = (Array.isArray(routes) ? routes : []).filter(route => dayjs(route.createdAt).isBefore(dayjs().subtract(1, 'day'))).length ?? 0;
 
   // Get drivers from allUsers
-  const drivers = allUsers?.filter(user => user.role === 'driver') || [];
+  const drivers = (Array.isArray(allUsers) ? allUsers : []).filter(user => user.role === 'driver');
 
   // اجمع البيانات الحقيقية من Redux
-  const totalStudents = allUsers?.filter(u => u.role === 'student').length || 0;
-  const totalParents = allUsers?.filter(u => u.role === 'parent').length || 0;
-  const totalDrivers = allUsers?.filter(u => u.role === 'driver').length || 0;
-  const totalBuses = buses?.length || 0;
-  const totalRoutes = routes?.length || 0;
+  const totalStudents = (Array.isArray(allUsers) ? allUsers : []).filter(u => u.role === 'student').length || 0;
+  const totalParents = (Array.isArray(allUsers) ? allUsers : []).filter(u => u.role === 'parent').length || 0;
+  const totalDrivers = (Array.isArray(allUsers) ? allUsers : []).filter(u => u.role === 'driver').length || 0;
+  const totalBuses = (Array.isArray(buses) ? buses : []).length || 0;
+  const totalRoutes = (Array.isArray(routes) ? routes : []).length || 0;
   const attendanceRate = attendanceStats?.attendanceRate || 0;
 
   // بيانات اليوم فقط (يمكنكِ لاحقًا عمل trend حسب الأيام)
@@ -273,9 +273,9 @@ const AdminDashboard = () => {
   useEffect(() => {
     setStats(prevStats => ({
       ...prevStats,
-      totalUsers: allUsers?.length ?? 0,
-      totalRoutes: routes?.length ?? 0,
-      activeBuses: buses?.filter(bus => bus.status === 'active').length ?? 0,
+      totalUsers: (Array.isArray(allUsers) ? allUsers : []).length ?? 0,
+      totalRoutes: (Array.isArray(routes) ? routes : []).length ?? 0,
+      activeBuses: (Array.isArray(buses) ? buses : []).filter(bus => bus.status === 'active').length ?? 0,
     }))
   }, [routes, buses, allUsers])
 
@@ -308,8 +308,8 @@ const AdminDashboard = () => {
       const activities = [];
       
       // Add user activities
-      if (allUsers && allUsers.length > 0) {
-        const recentUsers = allUsers.slice(0, 2);
+      if ((Array.isArray(allUsers) ? allUsers : []).length > 0) {
+        const recentUsers = (Array.isArray(allUsers) ? allUsers : []).slice(0, 2);
         recentUsers.forEach((user, index) => {
           activities.push({
             id: `user_${index}`,
@@ -323,8 +323,8 @@ const AdminDashboard = () => {
       }
       
       // Add bus activities
-      if (buses && buses.length > 0) {
-        const recentBuses = buses.slice(0, 2);
+      if ((Array.isArray(buses) ? buses : []).length > 0) {
+        const recentBuses = (Array.isArray(buses) ? buses : []).slice(0, 2);
         recentBuses.forEach((bus, index) => {
           activities.push({
             id: `bus_${index}`,
@@ -338,8 +338,8 @@ const AdminDashboard = () => {
       }
       
       // Add route activities
-      if (routes && routes.length > 0) {
-        const recentRoutes = routes.slice(0, 2);
+      if ((Array.isArray(routes) ? routes : []).length > 0) {
+        const recentRoutes = (Array.isArray(routes) ? routes : []).slice(0, 2);
         recentRoutes.forEach((route, index) => {
           activities.push({
             id: `route_${index}`,
@@ -374,8 +374,8 @@ const AdminDashboard = () => {
       const activities = [];
       
       // Add user activities
-      if (allUsers && allUsers.length > 0) {
-        const recentUsers = allUsers.slice(0, 2);
+      if ((Array.isArray(allUsers) ? allUsers : []).length > 0) {
+        const recentUsers = (Array.isArray(allUsers) ? allUsers : []).slice(0, 2);
         recentUsers.forEach((user, index) => {
           activities.push({
             id: `user_${index}`,
@@ -389,8 +389,8 @@ const AdminDashboard = () => {
       }
       
       // Add bus activities
-      if (buses && buses.length > 0) {
-        const recentBuses = buses.slice(0, 2);
+      if ((Array.isArray(buses) ? buses : []).length > 0) {
+        const recentBuses = (Array.isArray(buses) ? buses : []).slice(0, 2);
         recentBuses.forEach((bus, index) => {
           activities.push({
             id: `bus_${index}`,
@@ -404,8 +404,8 @@ const AdminDashboard = () => {
       }
       
       // Add route activities
-      if (routes && routes.length > 0) {
-        const recentRoutes = routes.slice(0, 2);
+      if ((Array.isArray(routes) ? routes : []).length > 0) {
+        const recentRoutes = (Array.isArray(routes) ? routes : []).slice(0, 2);
         recentRoutes.forEach((route, index) => {
           activities.push({
             id: `route_${index}`,
@@ -440,11 +440,11 @@ const AdminDashboard = () => {
   // - lineData
   // - lineOptions
   // - chartRef
-  const totalStudentsTrend = allUsers?.filter(u => u.role === 'student').length || 0;
-  const totalParentsTrend = allUsers?.filter(u => u.role === 'parent').length || 0;
-  const totalDriversTrend = allUsers?.filter(u => u.role === 'driver').length || 0;
-  const totalBusesTrend = buses?.length || 0;
-  const totalRoutesTrend = routes?.length || 0;
+  const totalStudentsTrend = (Array.isArray(allUsers) ? allUsers : []).filter(u => u.role === 'student').length || 0;
+  const totalParentsTrend = (Array.isArray(allUsers) ? allUsers : []).filter(u => u.role === 'parent').length || 0;
+  const totalDriversTrend = (Array.isArray(allUsers) ? allUsers : []).filter(u => u.role === 'driver').length || 0;
+  const totalBusesTrend = (Array.isArray(buses) ? buses : []).length || 0;
+  const totalRoutesTrend = (Array.isArray(routes) ? routes : []).length || 0;
   const attendanceRateTrend = attendanceStats?.attendanceRate || 0;
 
   // بيانات اليوم فقط (يمكنكِ لاحقًا عمل trend حسب الأيام)
@@ -658,10 +658,10 @@ const AdminDashboard = () => {
                   <div>
                     <p className="text-sm font-medium text-gray-500">Total Users</p>
                     <p className="text-3xl font-bold text-gray-900">
-                      {allUsers?.length?.toLocaleString() || 0}
+                      {(Array.isArray(allUsers) ? allUsers : []).length?.toLocaleString() || 0}
                     </p>
                     <p className="text-sm text-green-600">
-                      <i className="fas fa-arrow-up mr-1"></i>{allUsers?.length || 0} total users
+                      <i className="fas fa-arrow-up mr-1"></i>{(Array.isArray(allUsers) ? allUsers : []).length || 0} total users
                     </p>
                   </div>
                   <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -796,7 +796,7 @@ const AdminDashboard = () => {
                   <div className="overflow-x-auto">
                     {usersLoading ? (
                       <div>Loading...</div>
-                    ) : allUsers && allUsers.length > 0 ? (
+                    ) : (Array.isArray(allUsers) ? allUsers : []).length > 0 ? (
                       <>
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
@@ -819,7 +819,7 @@ const AdminDashboard = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                            {allUsers.slice(0, 5).map((user) => (
+                            {(Array.isArray(allUsers) ? allUsers : []).slice(0, 5).map((user) => (
                               <tr key={user._id}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
@@ -891,13 +891,21 @@ const AdminDashboard = () => {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {Array.isArray(buses) && buses.slice(0, 5).map((bus) => (
+                          {(Array.isArray(buses) ? buses : []).slice(0, 5).map((bus) => (
                             <tr key={bus._id}>
                               <td className="px-6 py-4 whitespace-nowrap">{bus.BusNumber}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{bus.capacity}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{bus.status}</td>
-                              <td className="px-6 py-4 whitespace-nowrap">{bus.assigned_driver_id || '-'}</td>
-                              <td className="px-6 py-4 whitespace-nowrap">{bus.route_id || '-'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {typeof bus.assigned_driver_id === 'object' && bus.assigned_driver_id !== null
+                                  ? `${bus.assigned_driver_id.firstName} ${bus.assigned_driver_id.lastName}`
+                                  : bus.assigned_driver_id || '-'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {typeof bus.route_id === 'object' && bus.route_id !== null
+                                  ? bus.route_id.name
+                                  : bus.route_id || '-'}
+                              </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <button className="text-brand-medium-blue hover:text-brand-dark-blue mr-3" onClick={() => { setEditingBus(bus); setShowEditBusModal(true); }}>Edit</button>
                                 <button className="text-red-600 hover:text-red-900" onClick={async () => { 
@@ -942,7 +950,7 @@ const AdminDashboard = () => {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {Array.isArray(routes) && routes.map((route) => (
+                          {(Array.isArray(routes) ? routes : []).map((route) => (
                             <tr key={route._id}>
                               <td className="px-6 py-4 whitespace-nowrap">{route.name}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{route.start_point?.name || '-'}</td>
@@ -1008,20 +1016,20 @@ const AdminDashboard = () => {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Users Data</span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${usersLoading ? 'bg-yellow-100 text-yellow-800' : allUsers && allUsers.length > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {usersLoading ? 'Loading...' : allUsers && allUsers.length > 0 ? 'Healthy' : 'No Data'}
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${usersLoading ? 'bg-yellow-100 text-yellow-800' : (Array.isArray(allUsers) ? allUsers : []).length > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {usersLoading ? 'Loading...' : (Array.isArray(allUsers) ? allUsers : []).length > 0 ? 'Healthy' : 'No Data'}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Buses Data</span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${busesLoading ? 'bg-yellow-100 text-yellow-800' : buses && buses.length > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {busesLoading ? 'Loading...' : buses && buses.length > 0 ? 'Healthy' : 'No Data'}
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${busesLoading ? 'bg-yellow-100 text-yellow-800' : (Array.isArray(buses) ? buses : []).length > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {busesLoading ? 'Loading...' : (Array.isArray(buses) ? buses : []).length > 0 ? 'Healthy' : 'No Data'}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Routes Data</span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${routesLoading ? 'bg-yellow-100 text-yellow-800' : routes && routes.length > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {routesLoading ? 'Loading...' : routes && routes.length > 0 ? 'Healthy' : 'No Data'}
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${routesLoading ? 'bg-yellow-100 text-yellow-800' : (Array.isArray(routes) ? routes : []).length > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {routesLoading ? 'Loading...' : (Array.isArray(routes) ? routes : []).length > 0 ? 'Healthy' : 'No Data'}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
@@ -1200,7 +1208,7 @@ const AdminDashboard = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select a driver (optional)</option>
-                    {drivers.map(driver => (
+                    {(Array.isArray(allUsers) ? allUsers : []).map(driver => (
                       <option key={driver._id} value={driver._id}>
                         {driver.firstName} {driver.lastName} - {driver.licenseNumber || 'No License'}
                       </option>
@@ -1218,7 +1226,7 @@ const AdminDashboard = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select a route (optional)</option>
-                    {routes.map(route => (
+                    {(Array.isArray(routes) ? routes : []).map(route => (
                       <option key={route._id} value={route._id}>
                         {route.name} - {route.start_point} to {route.end_point}
                       </option>
@@ -1317,11 +1325,11 @@ const AdminDashboard = () => {
               إضافة محطة على الخريطة
             </button>
             <ul className="mt-2">
-              {stops.map((stop, idx) => (
+              {(Array.isArray(stops) ? stops : []).map((stop, idx) => (
                 <li key={idx} className="text-sm text-gray-700 flex items-center gap-2">
                   <i className="fas fa-map-marker-alt text-brand-medium-blue"></i>
                   {stop.name} ({stop.lat.toFixed(5)}, {stop.long.toFixed(5)})
-                  <button className="ml-2 text-red-600 hover:underline" onClick={() => setStops(stops.filter((_, i) => i !== idx))}>حذف</button>
+                  <button className="ml-2 text-red-600 hover:underline" onClick={() => setStops((Array.isArray(stops) ? stops : []).filter((_, i) => i !== idx))}>حذف</button>
                 </li>
               ))}
             </ul>
@@ -1339,7 +1347,7 @@ const AdminDashboard = () => {
               height="400px"
               showControls={false}
               onMapClick={({ lat, lng }) => setTempLatLng({ lat, lng })}
-              stops={pointType === 'start' && startPoint ? [startPoint] : pointType === 'end' && endPoint ? [endPoint] : []}
+              stops={(pointType === 'start' && startPoint) ? [startPoint] : (pointType === 'end' && endPoint) ? [endPoint] : []}
             />
             {tempLatLng && (
               <div className="mt-4 p-4 bg-gray-50 rounded shadow flex flex-col gap-2">
@@ -1389,7 +1397,7 @@ const AdminDashboard = () => {
                 setTempLatLng({ lat, lng });
                 setPointType('stop');
               }}
-              stops={stops}
+              stops={(Array.isArray(stops) ? stops : [])}
             />
             {tempLatLng && pointType === 'stop' && (
               <div className="mt-4 p-4 bg-gray-50 rounded shadow flex flex-col gap-2">
@@ -1406,7 +1414,7 @@ const AdminDashboard = () => {
                     className="px-3 py-1 bg-brand-medium-blue text-white rounded"
                     onClick={() => {
                       if (pointName) {
-                        setStops([...stops, { name: pointName, lat: tempLatLng.lat, long: tempLatLng.lng }]);
+                        setStops((Array.isArray(stops) ? stops : []).concat({ name: pointName, lat: tempLatLng.lat, long: tempLatLng.lng }));
                         setShowMapModal(false);
                         setTempLatLng(null);
                         setPointName("");

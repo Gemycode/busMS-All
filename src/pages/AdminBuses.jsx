@@ -31,8 +31,8 @@ const AdminBuses = () => {
     dispatch(fetchBuses());
     // جلب كل المستخدمين ثم فلترة السائقين فقط
     api.get('/users/').then(res => {
-      console.log("all users:", res.data);
-      setDrivers(res.data.filter(u => u.role === 'driver'));
+      // جلب السائقين فقط من users
+      setDrivers((res.data.data && Array.isArray(res.data.data.users)) ? res.data.data.users.filter(u => u.role === 'driver') : []);
     });
     // جلب الطرق
     api.get('/routes/').then(res => {
@@ -161,8 +161,16 @@ const AdminBuses = () => {
                     <td className="px-4 py-2 md:py-3 whitespace-nowrap text-center font-semibold text-gray-800">{bus.BusNumber}</td>
                     <td className="px-4 py-2 md:py-3 whitespace-nowrap text-center font-medium text-gray-700">{bus.capacity}</td>
                     <td className="px-4 py-2 md:py-3 whitespace-nowrap text-center font-medium capitalize text-gray-700">{bus.status}</td>
-                    <td className="px-4 py-2 md:py-3 whitespace-nowrap text-center font-medium text-gray-700">{bus.assigned_driver_id || '-'}</td>
-                    <td className="px-4 py-2 md:py-3 whitespace-nowrap text-center font-medium text-gray-700">{bus.route_id || '-'}</td>
+                    <td className="px-4 py-2 md:py-3 whitespace-nowrap text-center font-medium text-gray-700">
+                      {typeof bus.assigned_driver_id === 'object' && bus.assigned_driver_id !== null
+                        ? `${bus.assigned_driver_id.firstName} ${bus.assigned_driver_id.lastName}`
+                        : bus.assigned_driver_id || '-'}
+                    </td>
+                    <td className="px-4 py-2 md:py-3 whitespace-nowrap text-center font-medium text-gray-700">
+                      {typeof bus.route_id === 'object' && bus.route_id !== null
+                        ? bus.route_id.name
+                        : bus.route_id || '-'}
+                    </td>
                     <td className="px-4 py-2 md:py-3 whitespace-nowrap text-center flex items-center justify-center gap-2">
                       <div className="relative group">
                         <button
