@@ -41,7 +41,7 @@ export const loginUser = createAsyncThunk(
   async (loginData, { rejectWithValue }) => {
     try {
       const res = await api.post('/users/login', loginData);
-      return res.data;
+      return res.data.data; // عدلت هنا ليعيد البيانات بشكل صحيح
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || 'Login failed');
     }
@@ -67,7 +67,7 @@ export const fetchAllUsers = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await api.get('/users/');
-      return res.data;
+      return res.data.data.users; // عدلت هنا ليعيد فقط مصفوفة المستخدمين
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || 'Failed to fetch users');
     }
@@ -153,7 +153,17 @@ export const deleteUser = createAsyncThunk(
 );
 
 const initialState = {
-  user: JSON.parse(localStorage.getItem('user')) || null,
+  user: (() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr && userStr !== "undefined") {
+      try {
+        return JSON.parse(userStr);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  })(),
   token: localStorage.getItem('token') || null,
   allUsers: [],
   loading: false,
@@ -177,8 +187,10 @@ const userSlice = createSlice({
     },
        loadUserFromStorage: (state) => {
       const storedUser = localStorage.getItem("user");
-      if (storedUser) {
+      if (storedUser && storedUser !== "undefined") {
         state.user = JSON.parse(storedUser);
+      } else {
+        state.user = null;
       }
     },
     logout(state) {
