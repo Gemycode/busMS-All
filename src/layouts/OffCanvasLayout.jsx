@@ -23,10 +23,16 @@ const adminButtons = [
 
 const managerButtons = [
   { icon: <FaHome />, label: "Dashboard", page: "/manager-dashboard" },
-  { icon: <FaRoute />, label: "Routes", page: "/manager/routes" },
+  { icon: <FaUsers />, label: "Users", page: "/admin/users" },
+  { icon: <FaBus />, label: "Buses", page: "/admin/buses" },
+  { icon: <FaRoute />, label: "Routes", page: "/admin/routes" },
   { icon: <FaClipboardCheck />, label: "Attendance", page: "/attendance" },
-  { icon: <FaUsers />, label: "Drivers", page: "/manager/drivers" },
-  { icon: <FaChartBar />, label: "Reports", page: "/manager/reports" },
+  { icon: <FaChartBar />, label: "Reports", page: "/admin/reports" },
+  { icon: <FaBell />, label: "Notifications", page: "/notifications" },
+  { icon: <FaMapMarkerAlt />, label: "Map View", page: "/map-view" },
+  { icon: <FaUser />, label: "Profile", page: "/profile" },
+  { icon: <FaCog />, label: "Settings", page: "/settings" },
+  { icon: <FaQuestionCircle />, label: "Help", page: "/help" },
 ];
 
 const driverButtons = [
@@ -34,15 +40,21 @@ const driverButtons = [
   { icon: <FaMapMarkerAlt />, label: "Live Tracking", page: "/map-view" },
   { icon: <FaUser />, label: "Profile", page: "/driver-profile" },
   { icon: <FaBell />, label: "Notifications", page: "/notifications" },
+  { icon: <FaChartBar />, label: "Reports", page: "/reports" },
+  { icon: <FaCog />, label: "Settings", page: "/settings" },
+  { icon: <FaQuestionCircle />, label: "Help", page: "/help" },
 ];
 
 const parentButtons = [
-  { icon: <FaHome />, label: "Dashboard", page: "/parent-dashboard" },
-  { icon: <FaChild />, label: "Children", page: "/children" },
+  { icon: <FaHome />, label: "Dashboard", page: "/dashboard/parent" },
+  // { icon: <FaChild />, label: "Children", page: "/children" }, // غير موجودة فعليًا
   { icon: <FaBell />, label: "Notifications", page: "/notifications" },
   { icon: <FaTicketAlt />, label: "Book Trip", page: "/booking" },
-  { icon: <FaMapMarkerAlt />, label: "Tracking", page: "/tracking" },
-  { icon: <FaUser />, label: "Profile", page: "/profile" },
+  { icon: <FaMapMarkerAlt />, label: "Tracking", page: "/map-view" },
+  { icon: <FaUser />, label: "Profile", page: "/parent-profile" },
+  // { icon: <FaChartBar />, label: "Reports", page: "/reports" }, // خاص بالإدارة فقط
+  { icon: <FaCog />, label: "Settings", page: "/settings" },
+  { icon: <FaQuestionCircle />, label: "Help", page: "/help" },
 ];
 
 const userButtons = [
@@ -51,6 +63,8 @@ const userButtons = [
   { icon: <FaMapMarkerAlt />, label: "Live Tracking", page: "/map-view" },
   { icon: <FaUser />, label: "Profile", page: "/profile" },
   { icon: <FaBell />, label: "Notifications", page: "/notifications" },
+  { icon: <FaCog />, label: "Settings", page: "/settings" },
+  { icon: <FaQuestionCircle />, label: "Help", page: "/help" },
 ];
 
 export default function OffCanvasLayout() {

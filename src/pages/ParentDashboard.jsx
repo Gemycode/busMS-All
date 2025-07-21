@@ -210,7 +210,7 @@ const ParentDashboard = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-500">Children</p>
-                    <p className="text-3xl font-bold text-gray-900">{children.length}</p>
+                    <p className="text-3xl font-bold text-gray-900">{(Array.isArray(children) ? children.length : 0)}</p>
                     <p className="text-sm text-green-600">
                       <i className="fas fa-check mr-1"></i>All safe
                     </p>
@@ -226,7 +226,7 @@ const ParentDashboard = () => {
                   <div>
                     <p className="text-sm font-medium text-gray-500">Active Trips</p>
                     <p className="text-3xl font-bold text-gray-900">
-                      {children.filter(c => c.status === 'on_bus').length}
+                      {(Array.isArray(children) ? children.filter(c => c.status === 'on_bus').length : 0)}
                     </p>
                     <p className="text-sm text-orange-600">
                       <i className="fas fa-bus mr-1"></i>On the way
@@ -243,7 +243,7 @@ const ParentDashboard = () => {
                   <div>
                     <p className="text-sm font-medium text-gray-500">At School</p>
                     <p className="text-3xl font-bold text-gray-900">
-                      {children.filter(c => c.status === 'at_school').length}
+                      {(Array.isArray(children) ? children.filter(c => c.status === 'at_school').length : 0)}
                     </p>
                     <p className="text-sm text-green-600">
                       <i className="fas fa-school mr-1"></i>Safe arrival
@@ -260,7 +260,7 @@ const ParentDashboard = () => {
                   <div>
                     <p className="text-sm font-medium text-gray-500">Unread Alerts</p>
                     <p className="text-3xl font-bold text-gray-900">
-                      {notifications.filter(n => !n.isRead).length}
+                      {(Array.isArray(notifications) ? notifications.filter(n => !n.isRead).length : 0)}
                     </p>
                     <p className="text-sm text-red-600">
                       <i className="fas fa-exclamation-triangle mr-1"></i>New updates
@@ -283,7 +283,7 @@ const ParentDashboard = () => {
                   <p>Loading children...</p>
                 ) : childrenError ? (
                   <p className="text-red-600">{childrenError}</p>
-                ) : children.length === 0 ? (
+                ) : (Array.isArray(children) ? children : []).length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <i className="fas fa-child text-4xl mb-2"></i>
                   <p className="mt-2">You have not added any children yet.</p>
@@ -291,7 +291,7 @@ const ParentDashboard = () => {
                 </div>
                 ) : (
                   <div className="space-y-4">
-                    {children.map((child) => (
+                    {(Array.isArray(children) ? children : []).map((child) => (
                       <div key={child._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
@@ -380,7 +380,7 @@ const ParentDashboard = () => {
               </div>
               <div className="bg-white rounded-lg shadow-md p-6">
                 <div className="space-y-4">
-                  {notifications.slice(0, 3).map((notification) => (
+                  {(Array.isArray(notifications) ? notifications : []).slice(0, 3).map((notification) => (
                     <div key={notification.id} className={`flex items-start p-3 rounded-lg ${
                       notification.isRead ? 'bg-gray-50' : 'bg-blue-50'
                     }`}>
