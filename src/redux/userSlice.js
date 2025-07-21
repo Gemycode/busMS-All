@@ -53,7 +53,7 @@ export const fetchProfile = createAsyncThunk(
   'user/fetchProfile',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await api.get('/me');
+      const res = await api.get('/users/me');
       return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || 'Failed to fetch profile');
@@ -255,7 +255,7 @@ const userSlice = createSlice({
       })
       .addCase(fetchProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
+        state.user = action.payload.data.user;
       })
       .addCase(fetchProfile.rejected, (state, action) => {
         state.loading = false;

@@ -7,14 +7,15 @@ import { FaRoad, FaPlus, FaEdit, FaTrash, FaSearch, FaInfoCircle } from "react-i
 
 const AdminRoutes = () => {
   const dispatch = useDispatch();
-  const routes = useSelector((state) => state.routes.routes || []);
+  const routes = useSelector((state) => state.routes.routes);
+  console.log("routes from redux:", routes);
   const loading = useSelector((state) => state.routes.loading);
   const [search, setSearch] = useState("");
   const [editingRoute, setEditingRoute] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [toast, setToast] = useState({ show: false, type: "success", message: "" });
-  const buses = useSelector((state) => state.buses.buses || []);
+  const buses = useSelector((state) => state.buses.buses);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [detailsRoute, setDetailsRoute] = useState(null);
 
@@ -22,9 +23,11 @@ const AdminRoutes = () => {
     dispatch(fetchRoutes());
   }, [dispatch]);
 
-  const filteredRoutes = routes.filter(route =>
-    (route.name + " " + (route.start_point || "") + " " + (route.end_point || "")).toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredRoutes = useMemo(() => {
+    return (routes || []).filter(route =>
+      (route.name + " " + (route.start_point || "") + " " + (route.end_point || "")).toLowerCase().includes(search.toLowerCase())
+    );
+  }, [routes, search]);
 
   const routeSchema = useMemo(() => ({
     name: { type: "text", label: "Route Name", required: true },
@@ -159,13 +162,14 @@ const AdminRoutes = () => {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSubmit={async (data) => {
-          try {
-            await dispatch(createRoute(data));
+          const res = await dispatch(createRoute(data));
+          console.log("createRoute result:", res);
+          if (res.error) {
+            showToast("error", res.payload || "حدث خطأ أثناء إضافة الطريق");
+          } else {
             setShowAddModal(false);
             dispatch(fetchRoutes());
             showToast("success", "Route added successfully");
-          } catch (err) {
-            showToast("error", "حدث خطأ أثناء إضافة الطريق");
           }
         }}
         schema={routeSchema}

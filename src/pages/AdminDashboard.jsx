@@ -6,7 +6,7 @@ import { Link } from "react-router-dom"
 import DynamicModal from "../components/DynamicModal"
 import { userSchema, busSchema, routeSchema } from "../components/schemas"
 import { fetchBuses, updateBus, deleteBus, clearMessage as clearBusMessage, createBus } from "../redux/busSlice"
-import { fetchRoutes, createRoute, updateRoute, deleteRoute, clearMessage as clearRouteMessage } from "../redux/routesSlice"
+import { fetchRoutes, createRoute, updateRoute, deleteRoute, clearRouteMessage } from "../redux/routeSlice";
 import { fetchAllUsers, registerUser, updateUser, deleteUser } from "../redux/userSlice"
 import dayjs from "dayjs"
 import { fetchAttendanceStats } from "../redux/attendanceSlice"
@@ -950,7 +950,7 @@ const AdminDashboard = () => {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {(Array.isArray(routes) ? routes : []).map((route) => (
+                          {(Array.isArray(routes) ? routes : []).slice(-5).map((route) => (
                             <tr key={route._id}>
                               <td className="px-6 py-4 whitespace-nowrap">{route.name}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{route.start_point?.name || '-'}</td>
