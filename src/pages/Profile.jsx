@@ -38,11 +38,6 @@ const Profile = () => {
     }
   }, [user]);
 
-  useEffect(() => {
-    // Redirect to settings page where profile functionality is now located
-    navigate('/settings', { replace: true });
-  }, [navigate]);
-
   const handleChange = (e) => {
     setProfileData({ ...profileData, [e.target.name]: e.target.value });
   };

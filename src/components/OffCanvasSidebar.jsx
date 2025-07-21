@@ -20,7 +20,9 @@ export default function OffCanvasSidebar({ buttons, collapsed, setCollapsed }) {
       style={{
         minWidth: collapsed ? 56 : 200,
         background: "linear-gradient(135deg, var(--brand-dark-blue) 0%, var(--brand-medium-blue) 50%, var(--brand-light-blue) 100%)",
-        padding: collapsed ? "16px 8px" : "24px 16px"
+        padding: collapsed ? "16px 8px" : "24px 16px",
+        overflowY: "auto", // اجعل السايدبار نفسه scrollable
+        maxHeight: "100vh"  // لا يتجاوز ارتفاع الشاشة
       }}
     >
       {/* Top section: Logo */}

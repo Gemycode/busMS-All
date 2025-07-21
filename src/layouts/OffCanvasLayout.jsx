@@ -1,6 +1,6 @@
 import OffCanvasSidebar from "../components/OffCanvasSidebar";
 import { Outlet } from "react-router-dom";
-import { FaHome, FaUsers, FaBus, FaRoute, FaChartBar, FaClipboardCheck, FaUser, FaBell, FaMapMarkerAlt, FaChild, FaTicketAlt } from "react-icons/fa";
+import { FaHome, FaUsers, FaBus, FaRoute, FaChartBar, FaClipboardCheck, FaUser, FaBell, FaMapMarkerAlt, FaChild, FaTicketAlt, FaCog, FaQuestionCircle } from "react-icons/fa";
 import { useState } from "react";
 import { useSelector } from "react-redux";
 
@@ -9,7 +9,16 @@ const adminButtons = [
   { icon: <FaUsers />, label: "Users", page: "/admin/users" },
   { icon: <FaBus />, label: "Buses", page: "/admin/buses" },
   { icon: <FaRoute />, label: "Routes", page: "/admin/routes" },
+  { icon: <FaClipboardCheck />, label: "Attendance", page: "/attendance" },
+  { icon: <FaTicketAlt />, label: "Bookings", page: "/admin/bookings" },
   { icon: <FaChartBar />, label: "Reports", page: "/admin/reports" },
+  { icon: <FaChartBar />, label: "Booking Reports", page: "/admin/booking-reports" },
+  { icon: <FaChartBar />, label: "Driver Reports", page: "/admin/driver-reports" },
+  { icon: <FaBell />, label: "Notifications", page: "/notifications" },
+  { icon: <FaMapMarkerAlt />, label: "Map View", page: "/map-view" },
+  { icon: <FaUser />, label: "Profile", page: "/profile" },
+  { icon: <FaCog />, label: "Settings", page: "/settings" },
+  { icon: <FaQuestionCircle />, label: "Help", page: "/help" },
 ];
 
 const managerButtons = [

@@ -84,8 +84,8 @@ const routeSlice = createSlice({
       })
       .addCase(createRoute.fulfilled, (state, action) => {
         state.loading = false;
-        state.routes.push(action.payload);
-        state.message = "Route created successfully!";
+        state.routes.push(action.payload.data);
+        state.message = action.payload.message || "Route created successfully!";
       })
       .addCase(createRoute.rejected, (state, action) => {
         state.loading = false;
