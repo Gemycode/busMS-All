@@ -17,7 +17,7 @@ const roleIcons = {
 
 const AdminUsers = () => {
   const dispatch = useDispatch();
-  const { allUsers, loading } = useSelector((state) => state.user);
+  const { allUsers, loading, user } = useSelector((state) => state.user);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [editingUser, setEditingUser] = useState(null);
@@ -94,11 +94,11 @@ const AdminUsers = () => {
             className="pl-10 pr-3 py-2 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-brand-dark-blue"
           >
             <option value="">All Roles</option>
-            {roles.map((role) => (
-              <option key={role} value={role}>
-                {role.charAt(0).toUpperCase() + role.slice(1)}
-              </option>
-            ))}
+            {roles
+              .filter(role => !(user?.role === "manager" && role === "admin"))
+              .map(role => (
+                <option key={role} value={role}>{role}</option>
+              ))}
           </select>
         </div>
       </div>
