@@ -2,9 +2,12 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { registerUser } from '../redux/userSlice';
 
 const RegisterParent = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -83,29 +86,21 @@ const RegisterParent = () => {
 
     setIsLoading(true);
     
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      // Store user in localStorage (simulate backend response)
-      const user = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phone: formData.phone,
-        role: 'parent',
-        profileImage: '',
-      };
-      localStorage.setItem('user', JSON.stringify(user));
-      // If backend returns a token, store it as well (simulate)
-      localStorage.setItem('token', 'dummy-token');
-      // For now, just navigate to parent dashboard
-      navigate('/dashboard/parent');
-    } catch (error) {
-      console.error('Registration error:', error);
-      setErrors({ general: 'Registration failed. Please try again.' });
-    } finally {
-      setIsLoading(false);
-    }
+    const parentData = { ...formData, role: 'parent' };
+
+    dispatch(registerUser(parentData))
+      .unwrap()
+      .then(() => {
+        // Navigate to a confirmation page or login page
+        navigate('/login?registration=success');
+      })
+      .catch((error) => {
+        console.error('Registration error:', error);
+        setErrors({ general: error.message || 'Registration failed. Please try again.' });
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   return (

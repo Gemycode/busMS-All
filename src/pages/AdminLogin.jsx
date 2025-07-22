@@ -2,9 +2,12 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { loginUser } from '../redux/userSlice';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -54,18 +57,22 @@ const AdminLogin = () => {
 
     setIsLoading(true);
     
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // For now, just navigate to admin dashboard
-      navigate('/admin-dashboard');
-    } catch (error) {
-      console.error('Login error:', error);
-      setErrors({ general: 'Login failed. Please check your credentials.' });
-    } finally {
-      setIsLoading(false);
-    }
+    dispatch(loginUser({ email: formData.email, password: formData.password }))
+      .unwrap()
+      .then((response) => {
+        if (response.user && (response.user.role === 'admin' || response.user.role === 'manager')) {
+          navigate('/admin-dashboard');
+        } else {
+          setErrors({ general: 'Access denied. Only admins and managers are allowed.' });
+        }
+      })
+      .catch((error) => {
+        console.error('Login error:', error);
+        setErrors({ general: error.message || 'Login failed. Please check your credentials.' });
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   return (

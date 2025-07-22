@@ -1,25 +1,44 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-
-const initialBookings = [
-  { id: 1, route: 'Route A - Downtown', time: '08:00 AM', status: 'confirmed', bus: 'BUS001', date: '2024-07-01' },
-  { id: 2, route: 'Route B - Campus', time: '07:30 AM', status: 'completed', bus: 'BUS002', date: '2024-06-28' },
-  { id: 3, route: 'Route C - Mall', time: '09:00 AM', status: 'cancelled', bus: 'BUS003', date: '2024-06-25' },
-];
+import api from '../redux/api';
+import Toast from '../components/Toast';
 
 const BookingsPage = () => {
-  const [bookings, setBookings] = useState(initialBookings);
+  const [bookings, setBookings] = useState([]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState({ show: false, type: 'success', message: '' });
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      setLoading(true);
+      try {
+        const res = await api.get('/bookings/parent');
+        setBookings(res.data?.data?.bookings || []);
+      } catch (error) {
+        setToast({ show: true, type: 'error', message: error.response?.data?.message || 'حدث خطأ أثناء جلب الحجوزات' });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBookings();
+  }, []);
 
   const filteredBookings = bookings.filter(b => {
-    const matchesSearch = b.route.toLowerCase().includes(search.toLowerCase()) || b.bus.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = b.route?.toLowerCase().includes(search.toLowerCase()) || b.bus?.toLowerCase().includes(search.toLowerCase());
     const matchesFilter = filter === 'all' || b.status === filter;
     return matchesSearch && matchesFilter;
   });
 
-  const handleCancel = (id) => {
-    setBookings(bookings.map(b => b.id === id ? { ...b, status: 'cancelled' } : b));
+  const handleCancel = async (id) => {
+    try {
+      await api.delete(`/bookings/cancel/${id}`);
+      setBookings(bookings.map(b => b._id === id ? { ...b, status: 'cancelled' } : b));
+      setToast({ show: true, type: 'success', message: 'تم إلغاء الحجز بنجاح' });
+    } catch (error) {
+      setToast({ show: true, type: 'error', message: error.response?.data?.message || 'حدث خطأ أثناء إلغاء الحجز' });
+    }
   };
 
   return (
@@ -71,60 +90,66 @@ const BookingsPage = () => {
                 </div>
               </div>
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bus</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredBookings.length === 0 ? (
+                {loading ? (
+                  <div className="text-center py-8 text-brand-dark-blue">جاري تحميل الحجوزات...</div>
+                ) : (
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
                       <tr>
-                        <td colSpan={6} className="text-center py-6 text-gray-500">No bookings found.</td>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bus</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                       </tr>
-                    ) : (
-                      filteredBookings.map((booking) => (
-                        <tr key={booking.id}>
-                          <td className="px-6 py-4 whitespace-nowrap">{booking.route}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{booking.time}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{booking.bus}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{booking.date}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              booking.status === 'confirmed'
-                                ? 'bg-green-100 text-green-800'
-                                : booking.status === 'completed'
-                                ? 'bg-gray-100 text-gray-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {booking.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {booking.status === 'confirmed' && (
-                              <button
-                                className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 text-xs font-medium"
-                                onClick={() => handleCancel(booking.id)}
-                              >
-                                Cancel
-                              </button>
-                            )}
-                          </td>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredBookings.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="text-center py-6 text-gray-500">No bookings found.</td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      ) : (
+                        filteredBookings.map((booking) => (
+                          <tr key={booking._id}>
+                            <td className="px-6 py-4 whitespace-nowrap">{booking.route}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{booking.time}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{booking.bus}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{booking.date}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                booking.status === 'confirmed'
+                                  ? 'bg-green-100 text-green-800'
+                                  : booking.status === 'completed'
+                                  ? 'bg-gray-100 text-gray-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {booking.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {booking.status === 'confirmed' && (
+                                <button
+                                  className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 text-xs font-medium"
+                                  onClick={() => handleCancel(booking._id)}
+                                >
+                                  Cancel
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           </div>
         </section>
       </main>
+      {/* Toast */}
+      {toast.show && <Toast type={toast.type} message={toast.message} />}
     </div>
   );
 };
