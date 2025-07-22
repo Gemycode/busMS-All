@@ -573,7 +573,6 @@ const Login = () => {
                             <option value="parent">Parent/Guardian</option>
                             <option value="driver">Bus Driver</option>
                             <option value="manager">Transportation Manager</option>
-                            <option value="admin">System Administrator</option>
                             <option value="school">School Staff</option>
                           </select>
                           {formErrors.userRole && <p className="mt-1 text-sm text-red-600">{formErrors.userRole}</p>}

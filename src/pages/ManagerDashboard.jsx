@@ -5,36 +5,59 @@ import { useDispatch, useSelector } from "react-redux"
 import { Link } from "react-router-dom"
 import LiveTrackingMap from "../components/LiveTrackingMap"
 import { fetchAttendanceStats } from "../redux/attendanceSlice"
+import { fetchRoutes } from "../redux/routeSlice"
+import { fetchAllUsers } from "../redux/userSlice"
+import { fetchTrips } from "../redux/tripsSlice"
 
 const ManagerDashboard = () => {
-  const dispatch = useDispatch();
-  const { stats: attendanceStats } = useSelector(state => state.attendance);
-  
+  const dispatch = useDispatch()
+  const { stats: attendanceStats } = useSelector(state => state.attendance)
+  const { routes } = useSelector(state => state.routes)
+  const { allUsers } = useSelector(state => state.user)
+  const { trips, loading: tripsLoading, error: tripsError } = useSelector(state => state.trips)
+
   const [stats, setStats] = useState({
     activeRoutes: 0,
     totalDrivers: 0,
-    onTimePerformance: 0,
-    fuelEfficiency: 0,
+    onTimePerformance: 94.2, // Will be connected later
+    fuelEfficiency: 6.8, // Will be connected later
   })
 
   const [alerts, setAlerts] = useState([])
   const [todayRoutes, setTodayRoutes] = useState([])
 
   useEffect(() => {
-    // Fetch attendance statistics
-    dispatch(fetchAttendanceStats());
-  }, [dispatch]);
+    // Fetch initial data from the backend
+    dispatch(fetchAttendanceStats())
+    dispatch(fetchRoutes())
+    dispatch(fetchAllUsers())
+    const today = new Date().toISOString().split('T')[0];
+    console.log('Fetching trips for date:', today);
+    dispatch(fetchTrips({ date: today }))
+  }, [dispatch])
+
+  // Add console logs to track data
+  useEffect(() => {
+    console.log('Trips loading:', tripsLoading);
+    console.log('Trips data:', trips);
+    console.log('Trips error:', tripsError);
+  }, [trips, tripsLoading, tripsError])
 
   useEffect(() => {
-    // Simulate loading dashboard data
-    setTimeout(() => {
-      setStats({
-        activeRoutes: 42,
-        totalDrivers: 38,
-        onTimePerformance: 94.2,
-        fuelEfficiency: 6.8,
-      })
+    // Calculate stats from the fetched data
+    if (routes && allUsers) {
+      const driverCount = allUsers.filter(user => user.role === 'driver').length
+      const routeCount = routes.length
 
+      setStats(prevStats => ({
+        ...prevStats,
+        activeRoutes: routeCount,
+        totalDrivers: driverCount,
+      }))
+    }
+
+    // Simulate loading alerts and today's routes (will be connected to backend in next steps)
+    setTimeout(() => {
       setAlerts([
         {
           id: 1,
@@ -59,46 +82,47 @@ const ManagerDashboard = () => {
         },
       ])
 
-      setTodayRoutes([
-        {
-          id: 1,
-          routeNumber: "42",
-          routeName: "Westside Express",
-          driver: "John Doe",
-          bus: "1042",
-          status: "on-time",
-          nextStop: "Maple & Oak St",
-          eta: "7:15 AM",
-          passengers: 28,
-          capacity: 72,
-        },
-        {
-          id: 2,
-          routeNumber: "15",
-          routeName: "Downtown Loop",
-          driver: "Sarah Wilson",
-          bus: "1087",
-          status: "delayed",
-          nextStop: "Central Station",
-          eta: "7:23 AM",
-          passengers: 45,
-          capacity: 72,
-        },
-        {
-          id: 3,
-          routeNumber: "28",
-          routeName: "Northside Route",
-          driver: "Mike Johnson",
-          bus: "1156",
-          status: "on-time",
-          nextStop: "Pine Street",
-          eta: "7:18 AM",
-          passengers: 32,
-          capacity: 72,
-        },
-      ])
+      // This part is now handled by Redux state
+      // setTodayRoutes([
+      //   {
+      //     id: 1,
+      //     routeNumber: "42",
+      //     routeName: "Westside Express",
+      //     driver: "John Doe",
+      //     bus: "1042",
+      //     status: "on-time",
+      //     nextStop: "Maple & Oak St",
+      //     eta: "7:15 AM",
+      //     passengers: 28,
+      //     capacity: 72,
+      //   },
+      //   {
+      //     id: 2,
+      //     routeNumber: "15",
+      //     routeName: "Downtown Loop",
+      //     driver: "Sarah Wilson",
+      //     bus: "1087",
+      //     status: "delayed",
+      //     nextStop: "Central Station",
+      //     eta: "7:23 AM",
+      //     passengers: 45,
+      //     capacity: 72,
+      //   },
+      //   {
+      //     id: 3,
+      //     routeNumber: "28",
+      //     routeName: "Northside Route",
+      //     driver: "Mike Johnson",
+      //     bus: "1156",
+      //     status: "on-time",
+      //     nextStop: "Pine Street",
+      //     eta: "7:18 AM",
+      //     passengers: 32,
+      //     capacity: 72,
+      //   },
+      // ])
     }, 1000)
-  }, [])
+  }, [routes, allUsers])
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -255,7 +279,7 @@ const ManagerDashboard = () => {
                         <i className="fas fa-filter mr-1"></i>Filter
                       </button>
                       <Link
-                        to="/manager/routes"
+                        to="/admin/trips"
                         className="px-3 py-1 bg-brand-medium-blue text-white rounded-md text-sm hover:bg-opacity-90"
                       >
                         View All
@@ -288,42 +312,48 @@ const ManagerDashboard = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {todayRoutes.map((route) => (
-                          <tr key={route.id}>
+                        {tripsLoading ? (
+                          <tr><td colSpan="6" className="text-center py-4">Loading today's trips...</td></tr>
+                        ) : tripsError ? (
+                          <tr><td colSpan="6" className="text-center py-4 text-red-600">Error: {tripsError?.message || 'Failed to load trips'}</td></tr>
+                        ) : trips?.length === 0 ? (
+                          <tr><td colSpan="6" className="text-center py-4">No trips scheduled for today</td></tr>
+                        ) : trips?.map((trip) => (
+                          <tr key={trip._id}>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div>
-                                <div className="text-sm font-medium text-gray-900">#{route.routeNumber}</div>
-                                <div className="text-sm text-gray-500">{route.routeName}</div>
+                                <div className="text-sm font-medium text-gray-900">#{trip.routeId?.name || 'N/A'}</div>
+                                <div className="text-sm text-gray-500">{trip.routeId?.start_point?.name} to {trip.routeId?.end_point?.name}</div>
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div>
-                                <div className="text-sm font-medium text-gray-900">{route.driver}</div>
-                                <div className="text-sm text-gray-500">Bus #{route.bus}</div>
+                                <div className="text-sm font-medium text-gray-900">{trip.driverId?.firstName} {trip.driverId?.lastName}</div>
+                                <div className="text-sm text-gray-500">Bus #{trip.busId?.BusNumber}</div>
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span
-                                className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(route.status)}`}
+                                className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(trip.status)}`}
                               >
-                                {route.status.replace("-", " ")}
+                                {trip.status}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div>
-                                <div className="text-sm text-gray-900">{route.nextStop}</div>
-                                <div className="text-sm text-gray-500">ETA: {route.eta}</div>
+                                <div className="text-sm text-gray-900">{trip.routeId?.stops?.[0]?.name || 'N/A'}</div>
+                                <div className="text-sm text-gray-500">ETA: {new Date(trip.date).toLocaleTimeString()}</div>
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
                                 <div className="text-sm text-gray-900">
-                                  {route.passengers}/{route.capacity}
+                                  {trip.passengers?.length || 0}/{trip.busId?.capacity || 0}
                                 </div>
                                 <div className="ml-2 w-16 bg-gray-200 rounded-full h-2">
                                   <div
                                     className="bg-brand-medium-blue h-2 rounded-full"
-                                    style={{ width: `${(route.passengers / route.capacity) * 100}%` }}
+                                    style={{ width: `${((trip.passengers?.length || 0) / (trip.busId?.capacity || 1)) * 100}%` }}
                                   ></div>
                                 </div>
                               </div>

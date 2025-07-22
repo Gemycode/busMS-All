@@ -2,8 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import axios from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
+import api from '../redux/api';
+import Toast from '../components/Toast';
+import { fetchRoutes } from '../redux/routeSlice';
+import { fetchTrips } from '../redux/tripsSlice';
 
 // بيانات تجريبية للرحلات والحجوزات
 const availableTrips = [
@@ -19,6 +22,9 @@ const initialBookings = [
 
 const BookingPage = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { routes, loading: routesLoading, error: routesError } = useSelector(state => state.routes);
+  const { trips, loading: tripsLoading, error: tripsError } = useSelector(state => state.trips);
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -29,43 +35,11 @@ const BookingPage = () => {
   const [bookings, setBookings] = useState(initialBookings);
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
+  const [toast, setToast] = useState({ show: false, type: 'success', message: '' });
 
-  // Available routes
-  const availableRoutes = [
-    {
-      id: 1,
-      name: "Route A - School Zone",
-      startLocation: "Al Olaya District",
-      endLocation: "King Fahd School",
-      duration: "45 min",
-      availableSeats: 25,
-      schedule: ["07:30 AM", "02:30 PM"],
-      description: "Direct route to King Fahd School via main roads",
-      busNumber: "BUS-001"
-    },
-    {
-      id: 2,
-      name: "Route B - Residential Area",
-      startLocation: "Al Malaz District",
-      endLocation: "Al Riyadh School",
-      duration: "35 min",
-      availableSeats: 18,
-      schedule: ["07:45 AM", "02:45 PM"],
-      description: "Scenic route through residential neighborhoods",
-      busNumber: "BUS-002"
-    },
-    {
-      id: 3,
-      name: "Route C - Express Line",
-      startLocation: "King Fahd District",
-      endLocation: "International School",
-      duration: "25 min",
-      availableSeats: 15,
-      schedule: ["08:00 AM", "03:00 PM"],
-      description: "Express service with limited stops",
-      busNumber: "BUS-003"
-    }
-  ];
+  useEffect(() => {
+    dispatch(fetchRoutes());
+  }, [dispatch]);
 
   // Passenger form data
   const [passengerData, setPassengerData] = useState({
@@ -101,9 +75,19 @@ const BookingPage = () => {
     return dates;
   };
 
+  // عند اختيار الطريق
   const handleRouteSelect = (route) => {
     setSelectedRoute(route);
     setStep(2);
+    setSelectedDate(''); // إعادة تعيين التاريخ عند تغيير الطريق
+  };
+
+  // عند اختيار التاريخ
+  const handleDateSelect = (date) => {
+    setSelectedDate(date);
+    if (selectedRoute && date) {
+      dispatch(fetchTrips({ routeId: selectedRoute._id, date }));
+    }
   };
 
   const handlePassengerDataChange = (field, value) => {
@@ -121,42 +105,36 @@ const BookingPage = () => {
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setToast({ show: false, type: 'success', message: '' });
     try {
-      // جلب التوكن من localStorage
-      const userData = JSON.parse(localStorage.getItem('user')) || {};
-      const token = userData.token || '';
-      // إرسال طلب الحجز للـ API
-      await axios.post('/api/bookings/create', {
-        // يجب تحديد studentId وbusId وrouteId حسب اختيار المستخدم
-        // هنا مثال: استخدم بيانات تجريبية أو اربطها بالاختيارات الفعلية
-        studentId: userData.id || userData._id || '',
-        busId: selectedRoute.busId || '',
-        routeId: selectedRoute.id || '',
-        date: selectedDate,
-        time: selectedTime,
-        passengerCount,
-        bookingType,
-        passengerData,
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+      // إرسال الطلب للباك اند مع tripId فقط
+      const res = await api.post('/bookings/create', {
+        tripId: selectedTrip._id,
+        studentId: /* ضع هنا منطق جلب الطالب المناسب (مثلاً من المستخدم الحالي أو اختيار من قائمة الأبناء) */ '',
+        pickupLocation: {
+          name: passengerData.pickupAddress,
+          lat: 0, // عدل لاحقًا حسب اختيار المستخدم
+          long: 0
+        },
+        dropoffLocation: {
+          name: passengerData.dropoffAddress,
+          lat: 0, // عدل لاحقًا حسب اختيار المستخدم
+          long: 0
+        },
+        notes: passengerData.notes
       });
-      // Navigate to confirmation page
+      // عند النجاح
       navigate('/booking-confirmation', {
         state: {
           bookingData: {
-            route: selectedRoute,
-            date: selectedDate,
-            time: selectedTime,
-            passengerCount,
-            bookingType,
+            trip: selectedTrip,
             passengerData,
-            totalPrice: 0 // Free for company employees
+            ...res.data // أضف أي بيانات إضافية من الباك اند
           }
         }
       });
     } catch (error) {
-      console.error('Booking error:', error);
-      alert('فشل في إنشاء الحجز. تأكد من البيانات وحاول مرة أخرى.');
+      setToast({ show: true, type: 'error', message: error.response?.data?.message || 'حدث خطأ أثناء الحجز' });
     } finally {
       setIsLoading(false);
     }
@@ -223,48 +201,53 @@ const BookingPage = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {availableRoutes.map((route) => (
-                  <div
-                    key={route.id}
-                    className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-brand-medium-blue"
-                    onClick={() => handleRouteSelect(route)}
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-brand-dark-blue">{route.name}</h3>
-                      <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                        {route.availableSeats} seats
-                      </span>
+                {routesLoading ? (
+                  <p>Loading routes...</p>
+                ) : routesError ? (
+                  <p>Error loading routes: {routesError}</p>
+                ) : routes.length === 0 ? (
+                  <p>No routes available.</p>
+                ) : (
+                  routes.map((route) => (
+                    <div
+                      key={route._id}
+                      className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-brand-medium-blue"
+                      onClick={() => handleRouteSelect(route)}
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-semibold text-brand-dark-blue">{route.name}</h3>
+                        <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                          {route.estimated_time || "N/A"}
+                        </span>
+                      </div>
+                      <div className="space-y-3 mb-4">
+                        <div className="flex items-center text-sm text-gray-600">
+                          <i className="fas fa-map-marker-alt text-brand-medium-blue mr-2"></i>
+                          <span>{route.start_point?.name || "-"} → {route.end_point?.name || "-"}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <i className="fas fa-clock text-brand-medium-blue mr-2"></i>
+                          <span>{route.estimated_time || "N/A"}</span>
+                        </div>
+                      </div>
+                      <div className="mb-4">
+                        <p className="text-xs text-gray-500 mb-2">Stops:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {Array.isArray(route.stops) && route.stops.length > 0 ? (
+                            route.stops.map((stop, idx) => (
+                              <span key={idx} className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                {stop.name}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-xs text-gray-400">No stops</span>
+                          )}
+                        </div>
+                      </div>
+                      {/* لا يوجد description في بيانات route، إذا أردت أضفها لاحقًا */}
                     </div>
-                    
-                    <div className="space-y-3 mb-4">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <i className="fas fa-map-marker-alt text-brand-medium-blue mr-2"></i>
-                        <span>{route.startLocation} → {route.endLocation}</span>
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <i className="fas fa-clock text-brand-medium-blue mr-2"></i>
-                        <span>{route.duration}</span>
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <i className="fas fa-bus text-brand-medium-blue mr-2"></i>
-                        <span>{route.busNumber}</span>
-                      </div>
-                    </div>
-
-                    <div className="mb-4">
-                      <p className="text-xs text-gray-500 mb-2">Schedule:</p>
-                      <div className="flex space-x-2">
-                        {route.schedule.map((time, index) => (
-                          <span key={index} className="text-xs bg-gray-100 px-2 py-1 rounded">
-                            {time}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <p className="text-sm text-gray-600">{route.description}</p>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -292,6 +275,49 @@ const BookingPage = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* اختيار التاريخ */}
+                {step === 2 && (
+                  <div className="mb-6">
+                    <label className="block mb-2 font-medium">Select Date</label>
+                    <select
+                      className="w-full border rounded px-3 py-2"
+                      value={selectedDate}
+                      onChange={e => handleDateSelect(e.target.value)}
+                    >
+                      <option value="">Select a date</option>
+                      {getAvailableDates().map(date => (
+                        <option key={date.value} value={date.value}>{date.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* بعد اختيار التاريخ، اعرض الرحلات المتاحة: */}
+                {step === 2 && selectedDate && (
+                  <div className="mb-6">
+                    <label className="block mb-2 font-medium">Available Trips</label>
+                    {tripsLoading ? (
+                      <p>Loading trips...</p>
+                    ) : tripsError ? (
+                      <p className="text-red-600">Error loading trips: {tripsError?.message || tripsError}</p>
+                    ) : trips.length === 0 ? (
+                      <p>No trips available for this route and date.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {trips.map(trip => (
+                          <div key={trip._id} className="border rounded p-4 flex flex-col gap-2">
+                            <div><b>Time:</b> {new Date(trip.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                            <div><b>Bus:</b> {trip.busId?.BusNumber || 'N/A'}</div>
+                            <div><b>Driver:</b> {trip.driverId?.firstName} {trip.driverId?.lastName}</div>
+                            <div><b>Status:</b> {trip.status}</div>
+                            <button className="mt-2 px-4 py-2 bg-brand-medium-blue text-white rounded hover:bg-brand-dark-blue" onClick={() => { setSelectedTrip(trip); setStep(3); }}>Book This Trip</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <form onSubmit={handleBookingSubmit} className="space-y-6">
                   {/* Trip Preferences */}
@@ -603,6 +629,8 @@ const BookingPage = () => {
           </div>
         </div>
       )}
+      {/* Toast */}
+      {toast.show && <Toast type={toast.type} message={toast.message} />}
     </div>
   );
 };
