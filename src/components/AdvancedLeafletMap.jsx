@@ -3,11 +3,13 @@ import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline, useMap, useMa
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import socketService from '../services/socketService';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { fetchActiveBuses, updateBusLocation } from '../redux/trackingSlice';
 import notificationSound from '../assets/notification.mp3';
 import { GeoSearchControl, OpenStreetMapProvider } from 'leaflet-geosearch';
 import 'leaflet-geosearch/dist/geosearch.css';
+import Toast from './Toast';
+import { addNotification } from '../redux/notificationsSlice';
 
 // إصلاح مشكلة أيقونات Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -28,16 +30,22 @@ function MapUpdater({ buses, selectedBusId, isTracking }) {
   const prevBusCount = useRef(buses.length);
   
   useEffect(() => {
-    if (isTracking && buses.length > 0 && buses.length !== prevBusCount.current) {
-      const bounds = L.latLngBounds(buses.map(bus => [bus.lat, bus.lng]));
+    // فلتر الباصات التي لديها lat/lng معرفين وصحيحين
+    const validBuses = Array.isArray(buses)
+      ? buses.filter(bus => bus.lat != null && bus.lng != null && !isNaN(bus.lat) && !isNaN(bus.lng))
+      : [];
+    if (isTracking && validBuses.length > 0 && validBuses.length !== prevBusCount.current) {
+      const bounds = L.latLngBounds(validBuses.map(bus => [bus.lat, bus.lng]));
       map.fitBounds(bounds, { padding: [20, 20], maxZoom: 15 });
-      prevBusCount.current = buses.length;
+      prevBusCount.current = validBuses.length;
     }
   }, [buses, map, isTracking]);
 
   useEffect(() => {
     if (selectedBusId && isTracking) {
-      const selectedBus = buses.find(bus => bus.id === selectedBusId);
+      const selectedBus = Array.isArray(buses)
+        ? buses.find(bus => bus.id === selectedBusId && bus.lat != null && bus.lng != null && !isNaN(bus.lat) && !isNaN(bus.lng))
+        : null;
       if (selectedBus) {
         map.setView([selectedBus.lat, selectedBus.lng], 16);
       }
@@ -118,8 +126,12 @@ const AdvancedLeafletMap = ({
   selectedRouteId = null,
   onBusClick = null,
   buses: propBuses = null,
-  onMapClick = null
+  onMapClick = null,
+  routes = [], // تأكد من وجود routes في props
+  showLegend = true, // جديد: القيمة الافتراضية
+  userRole = "parent", // أضف هذا البراميتر إذا لم يكن موجودًا
 }) => {
+  console.log('🚦 routes in AdvancedLeafletMap:', routes);
   const dispatch = useDispatch();
   const reduxBuses = useSelector(state => state.tracking?.buses);
   const buses = propBuses || reduxBuses || [];
@@ -133,125 +145,10 @@ const AdvancedLeafletMap = ({
   const [availableBuses, setAvailableBuses] = useState([]);
   const mapRef = useRef(null);
   const [iconScale, setIconScale] = useState(1);
-  const audioRef = useRef(null);
-
-  // مسارات واقعية مستخرجة من OpenStreetMap - Polylines حقيقية
-  const routes = [
-    {
-      id: 1,
-      name: "كورنيش النيل (ميدان المحطة → جامعة أسوان الجديدة)",
-      color: "#3B82F6",
-      path: [
-        [24.088269, 32.906964], [24.088306, 32.906848], [24.088371, 32.906617], [24.088638, 32.906688], [24.088696, 32.906705], [24.088903, 32.906773], [24.089015, 32.906807], [24.089988, 32.907142], [24.090102, 32.906801], [24.090341, 32.906086], [24.090686, 32.905052], [24.090733, 32.904912], [24.090791, 32.904738], [24.090858, 32.904535], [24.090875, 32.904483], [24.091094, 32.903807], [24.091201, 32.903478], [24.091329, 32.903052], [24.091342, 32.903003], [24.091353, 32.902951], [24.091363, 32.902899], [24.091381, 32.902784], [24.091444, 32.902319], [24.091486, 32.902074], [24.091514, 32.901965], [24.091564, 32.901799], [24.091658, 32.901504], [24.091704, 32.901368], [24.091801, 32.901308], [24.09182, 32.9013], [24.09184, 32.901296], [24.091861, 32.901295], [24.091881, 32.901298], [24.092, 32.901315], [24.09215, 32.901489], [24.09218, 32.901523], [24.092263, 32.90162], [24.092376, 32.901758], [24.092448, 32.901687], [24.092345, 32.901562], [24.092287, 32.901488], [24.09187, 32.901032], [24.091859, 32.900952], [24.09186, 32.900865], [24.091876, 32.900772], [24.091899, 32.90068], [24.091905, 32.900666], [24.092022, 32.90041], [24.092054, 32.900335], [24.092084, 32.900259], [24.092379, 32.899509], [24.092439, 32.899356], [24.092497, 32.899203], [24.092552, 32.899049], [24.092738, 32.898509], [24.092783, 32.89838], [24.092832, 32.898252], [24.092869, 32.898162], [24.092907, 32.898073], [24.093301, 32.897144], [24.093416, 32.897196], [24.09349, 32.897232], [24.093561, 32.897274], [24.09363, 32.897318], [24.09487, 32.898104], [24.095721, 32.898638], [24.095537, 32.898953], [24.095245, 32.899451]
-      ]
-    },
-    {
-      id: 2,
-      name: "شارع المستشفى (ميدان المحطة → المستشفى العام)",
-      color: "#10B981",
-      path: [
-        [24.088269, 32.906964], [24.088203, 32.907172], [24.088051, 32.907625], [24.087971, 32.907599], [24.087833, 32.908215], [24.088111, 32.908507], [24.088184, 32.908572], [24.088232, 32.908602], [24.088323, 32.908654], [24.088449, 32.908674], [24.088545, 32.908678], [24.08864, 32.908677], [24.088762, 32.908666], [24.088882, 32.908645], [24.089272, 32.908548], [24.089297, 32.90866], [24.089332, 32.908787], [24.089378, 32.908957], [24.089647, 32.908993], [24.089896, 32.909026], [24.090137, 32.909058], [24.090754, 32.909127], [24.090882, 32.909144], [24.091463, 32.909192], [24.092071, 32.909252]
-      ]
-    },
-    // المسار الثالث: طريق الأستاد إلى المطار (مؤقتًا استخدم نقاط تقريبية، يمكن تحديثها لاحقًا)
-    {
-      id: 3,
-      name: "طريق الأستاد الرياضي (الأستاد → مطار أسوان)",
-      color: "#EF4444",
-      path: [
-        [24.095245, 32.899451], [24.095721, 32.898638], [24.0889, 32.9633] // نقطة بداية ونهاية تقريبية
-      ]
-    }
-  ];
-
-  // بيانات المحطات الواقعية - محدثة لتبدأ من نقاط صحيحة على المسارات
-  const stops = [
-    // كورنيش النيل - محطات محدثة بناءً على المسار الجديد
-    { id: 1, name: "ميدان المحطة", lat: 24.088269, lng: 32.906964, type: "pickup" },
-    { id: 2, name: "شارع كورنيش النيل", lat: 24.090686, lng: 32.905052, type: "pickup" },
-    { id: 3, name: "فندق كتراكت", lat: 24.091094, lng: 32.903807, type: "pickup" },
-    { id: 4, name: "نادي أسوان", lat: 24.092, lng: 32.901315, type: "pickup" },
-    { id: 5, name: "حديقة النباتات", lat: 24.093301, lng: 32.897144, type: "pickup" },
-    { id: 6, name: "جامعة أسوان الجديدة", lat: 24.095245, lng: 32.899451, type: "pickup" },
-    
-    // شارع المستشفى - محطات محدثة بناءً على المسار الجديد
-    { id: 7, name: "ميدان المحطة (شارع المستشفى)", lat: 24.088269, lng: 32.906964, type: "pickup" },
-    { id: 8, name: "شارع المحطة", lat: 24.088203, lng: 32.907172, type: "pickup" },
-    { id: 9, name: "مدرسة أسوان الثانوية", lat: 24.089272, lng: 32.908548, type: "pickup" },
-    { id: 10, name: "المستشفى العام", lat: 24.092071, lng: 32.909252, type: "pickup" },
-    
-    // طريق الأستاد الرياضي - محطات محدثة
-    { id: 11, name: "الأستاد الرياضي", lat: 24.095245, lng: 32.899451, type: "pickup" },
-    { id: 12, name: "طريق الأستاد", lat: 24.095721, lng: 32.898638, type: "pickup" },
-    { id: 13, name: "مطار أسوان الدولي", lat: 24.0889, lng: 32.9633, type: "pickup" },
-  ];
-
-  // بيانات الباصات الواقعية - محدثة لتبدأ من نقاط صحيحة على المسارات
-  const aswanBuses = [
-    {
-      id: "ASW001",
-      number: "كورنيش النيل",
-      route: "كورنيش النيل (ميدان المحطة → جامعة أسوان الجديدة)",
-      routeId: 1,
-      driver: "أحمد محمد",
-      lat: 24.088269,
-      lng: 32.906964,
-      status: "active",
-      passengers: 30,
-      capacity: 50,
-      speed: 30,
-      heading: 45,
-      nextStop: "شارع كورنيش النيل",
-      eta: "7:15 ص",
-      isMoving: true,
-      lastUpdate: new Date().toISOString(),
-      batteryLevel: 90,
-      signalStrength: 95,
-      currentRouteIndex: 0,
-    },
-    {
-      id: "ASW002",
-      number: "شارع المستشفى",
-      route: "شارع المستشفى (ميدان المحطة → المستشفى العام)",
-      routeId: 2,
-      driver: "منى علي",
-      lat: 24.088269,
-      lng: 32.906964,
-      status: "active",
-      passengers: 20,
-      capacity: 50,
-      speed: 25,
-      heading: 60,
-      nextStop: "شارع المحطة",
-      eta: "7:20 ص",
-      isMoving: true,
-      lastUpdate: new Date().toISOString(),
-      batteryLevel: 85,
-      signalStrength: 90,
-      currentRouteIndex: 0,
-    },
-    {
-      id: "ASW003",
-      number: "طريق الأستاد",
-      route: "طريق الأستاد الرياضي (الأستاد → مطار أسوان)",
-      routeId: 3,
-      driver: "خالد حسن",
-      lat: 24.095245,
-      lng: 32.899451,
-      status: "active",
-      passengers: 15,
-      capacity: 50,
-      speed: 40,
-      heading: 90,
-      nextStop: "طريق الأستاد",
-      eta: "7:30 ص",
-      isMoving: true,
-      lastUpdate: new Date().toISOString(),
-      batteryLevel: 80,
-      signalStrength: 88,
-      currentRouteIndex: 0,
-    }
-  ];
+  // احذف audioRef وكل ما يتعلق بتشغيل الصوت
+  const audioRef = useRef(null); // لإشعار الصوت
+  const [toast, setToast] = useState(null); // لإظهار الإشعار
+  const [notifiedStops, setNotifiedStops] = useState({}); // {busId_stopIdx: timestamp}
 
   // تكبير/تصغير الأيقونات مع الزوم (مقياس مضبوط)
   useEffect(() => {
@@ -308,9 +205,9 @@ const AdvancedLeafletMap = ({
   // بدء التتبع
   const startTracking = () => {
     setIsTracking(true);
-    setAvailableBuses(aswanBuses);
+    setAvailableBuses(propBuses);
     // ربط WebSocket للباصات المتاحة
-    aswanBuses.forEach(bus => {
+    propBuses.forEach(bus => {
       socketService.joinBusTracking(bus.id);
     });
   };
@@ -355,13 +252,14 @@ const AdvancedLeafletMap = ({
       setAvailableBuses(prevBuses => prevBuses.map(bus => {
         if (bus.status !== 'active' || !bus.isMoving) return bus;
         
-        const route = routes.find(r => r.id === bus.routeId);
-        if (!route || !route.path || route.path.length === 0) return bus;
+        // استخدم المسارات المرسومة من props للحصول على المسار الحالي
+        const currentRoute = propBuses.find(r => r.id === bus.routeId);
+        if (!currentRoute || !currentRoute.path || currentRoute.path.length === 0) return bus;
         
         // حساب النقطة التالية في المسار
-        const nextIndex = (bus.currentRouteIndex + 1) % route.path.length;
-        const currentPoint = route.path[bus.currentRouteIndex];
-        const nextPoint = route.path[nextIndex];
+        const nextIndex = (bus.currentRouteIndex + 1) % currentRoute.path.length;
+        const currentPoint = currentRoute.path[bus.currentRouteIndex];
+        const nextPoint = currentRoute.path[nextIndex];
         
         if (!currentPoint || !nextPoint) return bus;
         
@@ -427,15 +325,15 @@ const AdvancedLeafletMap = ({
     }, 500); // تقليل الفاصل الزمني لجعل الحركة أكثر سلاسة
     
     return () => clearInterval(interval);
-  }, [isTracking, routes, dispatch]);
+  }, [isTracking, propBuses, dispatch]);
 
   // دالة للتحقق من الوصول لمحطة تجميع
   const checkIfAtStop = (lat, lng, routeId) => {
-    const route = routes.find(r => r.id === routeId);
-    if (!route) return false;
+    const currentRoute = propBuses.find(r => r.id === routeId);
+    if (!currentRoute) return false;
     
     // التحقق من قرب الباص من أي محطة في المسار
-    return stops.some(stop => {
+    return currentRoute.stops.some(stop => {
       const distance = Math.sqrt(
         Math.pow(stop.lat - lat, 2) + 
         Math.pow(stop.lng - lng, 2)
@@ -446,14 +344,14 @@ const AdvancedLeafletMap = ({
 
   // دالة الحصول على المحطة التالية
   const getNextStop = (routeId, currentIndex) => {
-    const route = routes.find(r => r.id === routeId);
-    if (!route) return "غير محدد";
+    const currentRoute = propBuses.find(r => r.id === routeId);
+    if (!currentRoute) return "غير محدد";
     
-    const nextIndex = (currentIndex + 1) % route.path.length;
-    const nextPoint = route.path[nextIndex];
+    const nextIndex = (currentIndex + 1) % currentRoute.path.length;
+    const nextPoint = currentRoute.path[nextIndex];
     
     // البحث عن أقرب محطة للموقع التالي
-    const nearestStop = stops.find(stop => {
+    const nearestStop = currentRoute.stops.find(stop => {
       const distance = Math.sqrt(
         Math.pow(stop.lat - nextPoint[0], 2) + 
         Math.pow(stop.lng - nextPoint[1], 2)
@@ -466,10 +364,10 @@ const AdvancedLeafletMap = ({
 
   // دالة الحصول على الوقت المتوقع للوصول
   const getNextETA = (routeId, currentIndex) => {
-    const route = routes.find(r => r.id === routeId);
-    if (!route) return "غير محدد";
+    const currentRoute = propBuses.find(r => r.id === routeId);
+    if (!currentRoute) return "غير محدد";
     
-    const remainingPoints = route.path.length - currentIndex;
+    const remainingPoints = currentRoute.path.length - currentIndex;
     const estimatedMinutes = Math.ceil(remainingPoints * 0.5); // 30 ثانية لكل نقطة
     
     const now = new Date();
@@ -485,14 +383,14 @@ const AdvancedLeafletMap = ({
   // تهيئة الباصات عند بدء التتبع
   useEffect(() => {
     if (isTracking && availableBuses.length === 0) {
-      setAvailableBuses(aswanBuses);
+      setAvailableBuses(propBuses);
     }
-  }, [isTracking, availableBuses.length]);
+  }, [isTracking, availableBuses.length, propBuses]);
 
   // تحديث الباصات من Redux إذا كانت متوفرة
   useEffect(() => {
-    if (buses && buses.length > 0) {
-      const transformedBuses = buses
+    if (propBuses && propBuses.length > 0) {
+      const transformedBuses = propBuses
         .filter(bus => bus.location)
         .map(bus => ({
           id: bus.bus.id,
@@ -520,7 +418,7 @@ const AdvancedLeafletMap = ({
         setAvailableBuses(transformedBuses);
       }
     }
-  }, [buses]);
+  }, [propBuses]);
 
   // CSS للباص الواقعي
   useEffect(() => {
@@ -902,37 +800,52 @@ const AdvancedLeafletMap = ({
   const trackingBtnIcon = isTracking ? '⏹' : '🟢';
   const trackingBtnText = isTracking ? 'إيقاف التتبع' : 'بدء التتبع';
 
-  // --- Only one definition of createStopIcon should exist, keep the one below with iconScale dependency ---
+  // عدل createStopIcon ليغير اللون والأيقونة حسب النوع
   const createStopIcon = (stop) => {
-    const size = 20 * iconScale;
+    const size = 12 * iconScale; // صغر الحجم
+    let color = '#3B82F6'; // gathering
+    let icon = '👥';
+    if (stop.type === 'pickup') {
+      color = '#10B981';
+      icon = '🟢';
+    } else if (stop.type === 'dropoff') {
+      color = '#F59E42';
+      icon = '🟠';
+    }
     return L.divIcon({
       className: 'custom-stop-icon',
-      html: `<div class="stop-marker ${stop.type}" style="width:${size}px; height:${size}px;"><div class="stop-name">${stop.name}</div></div>`,
+      html: `<div class="stop-marker" style="background:${color};width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;font-size:12px;">${icon}</div>` +
+        `<div style='font-size:9px;text-align:center;color:#222;margin-top:2px;'>${stop.name}</div>`,
       iconSize: [size, size],
       iconAnchor: [size / 2, size / 2]
     });
   };
 
-  // --- Only one definition of BusStops should exist, keep the one below ---
+  // عدل BusStops ليعرض popup يوضح نوع المحطة
   const BusStops = ({ stops }) => {
-    return stops.map(stop => (
-      <Marker
-        key={stop.id}
-        position={[stop.lat, stop.lng]}
-        icon={createStopIcon(stop)}
-      >
-        <Popup>
-          <div className="stop-popup">
-            <h4>{stop.name}</h4>
-            {stop.address && <p>{stop.address}</p>}
-            <p>النوع: {stop.type === 'school' ? 'مدرسة' : stop.type === 'pickup' ? 'نقطة تجميع' : 'نقطة إنزال'}</p>
-            {typeof stop.studentCount !== 'undefined' && <p>عدد الطلاب: {stop.studentCount}</p>}
-            {stop.nextArrival && <p>الوصول التالي: {stop.nextArrival}</p>}
-          </div>
-        </Popup>
-      </Marker>
-    ));
+    return stops.map((stop, idx) => {
+      // تأكد أن lng موجودة (ولو كانت long فقط)
+      const lng = stop.lng !== undefined ? stop.lng : stop.long;
+      return (
+        <Marker
+          key={stop.id || idx}
+          position={[stop.lat, lng]}
+          icon={createStopIcon(stop)}
+        >
+          <Popup>
+            <div className="stop-popup">
+              <h4>{stop.name}</h4>
+              <p>النوع: {stop.type === 'gathering' ? 'مكان تجمع الطلاب' : stop.type === 'pickup' ? 'نقطة صعود' : stop.type === 'dropoff' ? 'نقطة نزول' : stop.type}</p>
+            </div>
+          </Popup>
+        </Marker>
+      );
+    });
   };
+
+  // أضف وسيلة إيضاح (Legend) في الخريطة
+  // --- Only one definition of createStopIcon should exist, keep the one below with iconScale dependency ---
+  // --- Only one definition of BusStops should exist, keep the one below ---
 
   // Play notification sound and show browser notification when buses appear after tracking starts
   useEffect(() => {
@@ -952,16 +865,63 @@ const AdvancedLeafletMap = ({
           Notification.requestPermission();
         }
       }
-      // Play sound
-      if (audioRef.current) {
-        try {
-          audioRef.current.play();
-        } catch (e) {
-          // Ignore play errors (e.g., user gesture required)
-        }
-      }
+      // احذف كل useEffect أو كود يشغل audioRef.current.play()
     }
   }, [isTracking, availableBuses.length]);
+
+  // منطق الإشعار عند اقتراب الباص من محطة
+  useEffect(() => {
+    if (!isTracking || !availableBuses.length || !propBuses.length) return;
+    availableBuses.forEach(bus => {
+      propBuses.forEach((route, routeIdx) => {
+        if (route.stops) { // Check if route has stops
+          route.stops.forEach((stop, stopIdx) => {
+            const lng = stop.lng !== undefined ? stop.lng : stop.long;
+            const distance = Math.sqrt(
+              Math.pow(stop.lat - bus.lat, 2) +
+              Math.pow(lng - bus.lng, 2)
+            );
+            // إذا اقترب الباص من المحطة (مسافة صغيرة)
+            if (distance < 0.0007) {
+              const key = `${bus.id}_${stopIdx}`;
+              // لا تكرر الإشعار لنفس الباص-محطة خلال 3 دقائق
+              if (!notifiedStops[key] || Date.now() - notifiedStops[key] > 180000) {
+                // إشعار Toast
+                setToast({
+                  message: `🚌 الباص "${bus.number}" وصل إلى ${stop.type === 'gathering' ? 'مكان تجمع الطلاب' : stop.type === 'pickup' ? 'نقطة صعود' : stop.type === 'dropoff' ? 'نقطة نزول' : 'محطة'} "${stop.name}"`,
+                  type: 'info',
+                });
+                // إشعار سجل الإشعارات
+                dispatch(addNotification({
+                  busId: bus.id,
+                  busName: bus.number,
+                  stopName: stop.name,
+                  stopType: stop.type,
+                  type: stop.type === 'gathering' ? 'gathering' : stop.type === 'pickup' ? 'arrival' : stop.type === 'dropoff' ? 'dropoff' : 'arrival',
+                  title: `وصول الباص إلى المحطة`,
+                  message: `الباص "${bus.number}" وصل إلى ${stop.type === 'gathering' ? 'مكان تجمع الطلاب' : stop.type === 'pickup' ? 'نقطة صعود' : stop.type === 'dropoff' ? 'نقطة نزول' : 'محطة'} "${stop.name}"`,
+                  time: new Date().toLocaleTimeString('ar-EG'),
+                  date: new Date().toISOString().split('T')[0],
+                  isRead: false
+                }));
+                setNotifiedStops(prev => ({ ...prev, [key]: Date.now() }));
+                if (audioRef.current) {
+                  try { audioRef.current.play(); } catch (e) {}
+                }
+              }
+            }
+          });
+        }
+      });
+    });
+  }, [availableBuses, propBuses, isTracking, notifiedStops, dispatch]);
+
+  // شغل صوت الإشعار عند بدء التتبع للـ parent فقط
+  useEffect(() => {
+    if (userRole === 'parent' && isTracking && audioRef.current) {
+      try { audioRef.current.play(); } catch (e) {}
+    }
+  }, [isTracking, userRole]);
 
   useEffect(() => {
     if (autoCenter && navigator.geolocation) {
@@ -977,8 +937,206 @@ const AdvancedLeafletMap = ({
     }
   }, []);
 
+  // عند رسم المسارات:
+  const renderPolylines = () => {
+    if (!Array.isArray(routes)) return null;
+    return routes.map((route, idx) => {
+      const points = [];
+      if (route.start_point && typeof route.start_point.lat === 'number' && typeof route.start_point.long === 'number')
+        points.push([route.start_point.lat, route.start_point.long]);
+      if (Array.isArray(route.stops)) {
+        route.stops.forEach(stop => {
+          if (typeof stop.lat === 'number' && (typeof stop.long === 'number' || typeof stop.lng === 'number'))
+            points.push([stop.lat, stop.long ?? stop.lng]);
+        });
+      }
+      if (route.end_point && typeof route.end_point.lat === 'number' && typeof route.end_point.long === 'number')
+        points.push([route.end_point.lat, route.end_point.long]);
+      if (points.length < 2) return null;
+      return (
+        <Polyline
+          key={route._id || route.id || idx}
+          positions={points}
+          color={route.color || '#3B82F6'}
+          weight={4}
+          opacity={0.8}
+        />
+      );
+    });
+  };
+
+  // عند رسم Marker للباصات:
+  const renderBusMarkers = () => {
+    if (!Array.isArray(propBuses)) return null;
+    return propBuses.map((bus, idx) => {
+      console.log('bus:', bus);
+      console.log('bus.currentLocation:', bus.currentLocation);
+      const lat = bus.currentLocation?.lat ?? bus.currentLocation?.latitude ?? bus.lat;
+      const lng = bus.currentLocation?.lng ?? bus.currentLocation?.long ?? bus.currentLocation?.longitude ?? bus.lng ?? bus.long ?? bus.longitude;
+      if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) return null;
+      return (
+        <Marker
+          key={bus._id || bus.id || idx}
+          position={[lat, lng]}
+          icon={createBusIcon(bus)}
+          eventHandlers={{ click: () => handleBusClick(bus) }}
+        >
+          <Popup>
+            <BusPopup bus={bus} />
+          </Popup>
+        </Marker>
+      );
+    });
+  };
+
+  // محاكاة حركة الباصات على جميع المسارات
+  const [busIndices, setBusIndices] = useState(() =>
+    Array.isArray(routes) ? routes.map(() => 0) : []
+  );
+
+  useEffect(() => {
+    if (!Array.isArray(routes) || routes.length === 0) return;
+    const interval = setInterval(() => {
+      setBusIndices(prev =>
+        prev.map((idx, routeIdx) => {
+          const route = routes[routeIdx];
+          const points = [
+            route.start_point && [route.start_point.lat, route.start_point.long],
+            ...(Array.isArray(route.stops) ? route.stops.map(stop => [stop.lat, stop.long || stop.lng]) : []),
+            route.end_point && [route.end_point.lat, route.end_point.long]
+          ].filter(Boolean);
+          if (points.length < 2) return 0;
+          return (idx + 1) % points.length;
+        })
+      );
+    }, 1200); // كل 1.2 ثانية ينتقل الباص لنقطة جديدة
+    return () => clearInterval(interval);
+  }, [routes]);
+
+  // رسم المسارات والباصات المتحركة
+  const renderSimulatedPolylinesAndBuses = () => {
+    if (!Array.isArray(routes)) return null;
+    return routes.map((route, routeIdx) => {
+      const points = [
+        route.start_point && [route.start_point.lat, route.start_point.long],
+        ...(Array.isArray(route.stops) ? route.stops.map(stop => [stop.lat, stop.long || stop.lng]) : []),
+        route.end_point && [route.end_point.lat, route.end_point.long]
+      ].filter(pt => Array.isArray(pt) && pt.length === 2 && pt[0] != null && pt[1] != null && !isNaN(pt[0]) && !isNaN(pt[1]));
+      if (points.length < 2) return null;
+      const busPos = points[busIndices[routeIdx] || 0];
+      if (!busPos || busPos[0] == null || busPos[1] == null || isNaN(busPos[0]) || isNaN(busPos[1])) return null;
+      return (
+        <>
+          <Polyline
+            key={route._id || route.id || routeIdx}
+            positions={points}
+            color={route.color || '#3B82F6'}
+            weight={4}
+            opacity={0.8}
+          />
+          <Marker
+            key={"bus-" + (route._id || route.id || routeIdx)}
+            position={busPos}
+            icon={createBusIcon({ number: route.name || `Bus ${routeIdx+1}`, status: 'active', speed: 30, heading: 0 })}
+          />
+        </>
+      );
+    });
+  };
+
+  function getClosestPointOnRoute(busLat, busLng, routePoints) {
+    let minDist = Infinity;
+    let closest = routePoints[0];
+    routePoints.forEach(pt => {
+      if (!pt || pt.length !== 2) return;
+      const dist = Math.sqrt(Math.pow(pt[0] - busLat, 2) + Math.pow(pt[1] - busLng, 2));
+      if (dist < minDist) {
+        minDist = dist;
+        closest = pt;
+      }
+    });
+    return closest;
+  }
+
+  useEffect(() => {
+    if (!Array.isArray(propBuses) || !Array.isArray(routes)) return;
+    propBuses.forEach(bus => {
+      const lat = bus.currentLocation?.lat ?? bus.currentLocation?.latitude ?? bus.lat;
+      const lng = bus.currentLocation?.lng ?? bus.currentLocation?.long ?? bus.currentLocation?.longitude ?? bus.lng ?? bus.long ?? bus.longitude;
+      const hasValidCoords = typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng);
+      const route = routes.find(r => String(r._id || r.id) === String(bus.route_id?._id || bus.route_id || bus.route));
+      console.log("routes ids:", routes.map(r => r._id || r.id));
+      console.log("bus.route_id:", bus.route_id);
+      console.log('🔵 Bus:', bus.BusNumber || bus.number || bus._id, '| lat:', lat, '| lng:', lng, '| valid:', hasValidCoords, '| route found:', !!route);
+      if (hasValidCoords && route) {
+        // snap-to-route (فقط طباعة)
+        const points = [
+          route.start_point && [route.start_point.lat, route.start_point.long],
+          ...(Array.isArray(route.stops) ? route.stops.map(stop => [stop.lat, stop.long || stop.lng]) : []),
+          route.end_point && [route.end_point.lat, route.end_point.long]
+        ].filter(pt => Array.isArray(pt) && pt.length === 2 && pt[0] != null && pt[1] != null && !isNaN(pt[0]) && !isNaN(pt[1]));
+        const [snapLat, snapLng] = getClosestPointOnRoute(lat, lng, points);
+        console.log('🟡 Snap-to-route:', { bus: bus.BusNumber || bus.number || bus._id, orig: [lat, lng], snapped: [snapLat, snapLng] });
+      }
+    });
+  }, [propBuses, routes]);
+
+  // دالة توليد نقاط بين نقطتين
+  function interpolatePoints([lat1, lng1], [lat2, lng2], steps = 15) {
+    const points = [];
+    for (let i = 1; i < steps; i++) {
+      const lat = lat1 + (lat2 - lat1) * (i / steps);
+      const lng = lng1 + (lng2 - lng1) * (i / steps);
+      points.push([lat, lng]);
+    }
+    return points;
+  }
+
+  // دالة بناء مصفوفة نقاط المسار بالكامل
+  function buildSmoothRoutePoints(route, steps = 15) {
+    const rawPoints = [
+      route.start_point && [route.start_point.lat, route.start_point.long],
+      ...(Array.isArray(route.stops) ? route.stops.map(stop => [stop.lat, stop.long || stop.lng]) : []),
+      route.end_point && [route.end_point.lat, route.end_point.long]
+    ].filter(pt => Array.isArray(pt) && pt.length === 2 && pt[0] != null && pt[1] != null && !isNaN(pt[0]) && !isNaN(pt[1]));
+
+    let smoothPoints = [];
+    for (let i = 0; i < rawPoints.length - 1; i++) {
+      smoothPoints.push(rawPoints[i]);
+      smoothPoints = smoothPoints.concat(interpolatePoints(rawPoints[i], rawPoints[i + 1], steps));
+    }
+    smoothPoints.push(rawPoints[rawPoints.length - 1]);
+    return smoothPoints;
+  }
+
+  // عدل دالة محاكاة حركة الباصات الحقيقية على المسار لتعمل فقط عند isTracking
+  useEffect(() => {
+    if (!isTracking || !Array.isArray(propBuses) || !Array.isArray(routes) || propBuses.length === 0 || routes.length === 0) return;
+    let indices = {};
+    propBuses.forEach(bus => { indices[bus.id] = 0; });
+    const interval = setInterval(() => {
+      setAvailableBuses(prevBuses => prevBuses.map(bus => {
+        const route = routes.find(r => String(r._id || r.id) === String(bus.route_id?._id || bus.route_id || bus.route));
+        if (!route) return bus;
+        const points = buildSmoothRoutePoints(route, 15);
+        if (points.length < 2) return bus;
+        const idx = (indices[bus.id] ?? 0) % points.length;
+        const [newLat, newLng] = points[idx];
+        indices[bus.id] = (idx + 1) % points.length;
+        return {
+          ...bus,
+          lat: newLat,
+          lng: newLng,
+          lastUpdate: new Date().toISOString(),
+        };
+      }));
+    }, 1200);
+    return () => clearInterval(interval);
+  }, [isTracking, propBuses, routes]);
+
   return (
     <>
+      {toast && <Toast message={toast.message} type={toast.type} duration={4000} onClose={() => setToast(null)} />}
       <audio ref={audioRef} src={notificationSound} preload="auto" />
       <div className="relative" style={{ height }}>
         <MapContainer
@@ -1004,24 +1162,12 @@ const AdvancedLeafletMap = ({
           {/* تحديث الخريطة تلقائياً */}
           <MapUpdater buses={availableBuses} selectedBusId={selectedBusId} isTracking={isTracking} />
           
-          {/* عرض الحافلات المتاحة */}
-          {isTracking && availableBuses.map(bus => (
-            <Marker
-              key={bus.id}
-              position={[bus.lat, bus.lng]}
-              icon={createBusIcon(bus)}
-              eventHandlers={{
-                click: () => handleBusClick(bus)
-              }}
-            >
-              <Popup>
-                <BusPopup bus={bus} />
-              </Popup>
-            </Marker>
-          ))}
-          
+          {/* رسم المسارات فقط عند بدء التتبع */}
+          {isTracking && renderPolylines()}
+          {/* رسم الباصات: متحركة عند التتبع، ثابتة عند عدم التتبع */}
+          {isTracking ? renderSimulatedPolylinesAndBuses() : renderBusMarkers()}
           {/* عرض المحطات */}
-          {showStops && <BusStops stops={stops} />}
+          {showStops && isTracking && <BusStops stops={Array.isArray(routes) ? routes.flatMap(r => r.stops || []) : []} />}
           
           {/* عرض منطقة التغطية */}
           {showCoverage && <CoverageArea center={mapCenter} />}
@@ -1126,6 +1272,7 @@ const AdvancedLeafletMap = ({
           </div>
         )}
       </div>
+      {/* وسيلة الإيضاح */}
     </>
   );
 };

@@ -88,6 +88,18 @@ class SocketService {
   isSocketConnected() {
     return this.isConnected;
   }
+
+  // أضف دوال on/off العامة
+  on(event, handler) {
+    if (this.socket) {
+      this.socket.on(event, handler);
+    }
+  }
+  off(event, handler) {
+    if (this.socket) {
+      this.socket.off(event, handler);
+    }
+  }
 }
 
 // Create singleton instance
