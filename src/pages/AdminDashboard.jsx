@@ -8,6 +8,7 @@ import { userSchema, busSchema, routeSchema } from "../components/schemas"
 import { fetchBuses, updateBus, deleteBus, clearMessage as clearBusMessage, createBus } from "../redux/busSlice"
 import { fetchRoutes, createRoute, updateRoute, deleteRoute, clearRouteMessage } from "../redux/routeSlice";
 import { fetchAllUsers, registerUser, updateUser, deleteUser } from "../redux/userSlice"
+import { createTrip, fetchTrips } from "../redux/tripsSlice"
 import dayjs from "dayjs"
 import { fetchAttendanceStats } from "../redux/attendanceSlice"
 import AdvancedLeafletMap from "../components/AdvancedLeafletMap";
@@ -47,6 +48,7 @@ const AdminDashboard = () => {
   const [editingBus, setEditingBus] = useState(null)
   const [editingUser, setEditingUser] = useState(null);
   const [showEditUserModal, setShowEditUserModal] = useState(false);
+  const [showTripModal, setShowTripModal] = useState(false);
 
   // Bus creation form state
   const [busFormData, setBusFormData] = useState({
@@ -1066,6 +1068,13 @@ const AdminDashboard = () => {
                       <i className="fas fa-route text-brand-medium-blue mr-3"></i>
                       <span className="text-sm font-medium">Create Route</span>
                     </button>
+                    <button
+                      onClick={() => setShowTripModal(true)}
+                      className="w-full flex items-center px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors duration-200"
+                    >
+                      <i className="fas fa-calendar-alt text-brand-medium-blue mr-3"></i>
+                      <span className="text-sm font-medium">Schedule Trip</span>
+                    </button>
                     <Link
                       to="/admin/driver-reports"
                       className="w-full flex items-center px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors duration-200"
@@ -1498,6 +1507,29 @@ const AdminDashboard = () => {
         schema={userSchema}
         title="Edit User"
         initialData={editingUser}
+      />
+      <DynamicModal
+        isOpen={showTripModal}
+        onClose={() => setShowTripModal(false)}
+        title="Schedule a New Trip"
+        schema={{
+          date: { type: 'date', label: 'Trip Date', required: true },
+          routeId: { type: 'select', label: 'Route', required: true, options: routes.map(r => ({ value: r._id, label: r.name })) },
+          busId: { type: 'select', label: 'Bus', required: true, options: buses.map(b => ({ value: b._id, label: `${b.BusNumber} (Capacity: ${b.capacity})` })) },
+          driverId: { type: 'select', label: 'Driver', required: true, options: drivers.map(d => ({ value: d._id, label: `${d.firstName} ${d.lastName}` })) },
+        }}
+        onSubmit={async (data) => {
+          try {
+            await dispatch(createTrip(data)).unwrap();
+            setShowTripModal(false);
+            // إعادة جلب الرحلات لليوم الحالي
+            const today = new Date().toISOString().split('T')[0];
+            dispatch(fetchTrips({ date: today }));
+          } catch (err) {
+            console.error("Failed to create trip:", err);
+            alert("Error: " + (err.message || "Could not schedule the trip."));
+          }
+        }}
       />
       {routeMsg && <div className="text-center text-sm mt-2 mb-4 font-bold" style={{color: routeMsg.includes('success') ? '#16a34a' : '#dc2626'}}>{routeMsg}</div>}
       {busMsg && <div className="text-center text-sm mt-2 mb-4 font-bold" style={{color: busMsg.includes('success') ? '#16a34a' : '#dc2626'}}>{busMsg}</div>}
