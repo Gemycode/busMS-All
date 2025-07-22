@@ -4,6 +4,7 @@ import trackingReducer from './trackingSlice';
 import attendanceReducer from './attendanceSlice';
 import busReducer from './busSlice';
 import routeReducer from './routeSlice';
+import tripsReducer from './tripsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     attendance: attendanceReducer,
     buses: busReducer,
     routes: routeReducer,
+    trips: tripsReducer,
   },
 });
 

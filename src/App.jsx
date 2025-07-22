@@ -39,6 +39,7 @@ import AdminBuses from "./pages/AdminBuses";
 import AdminRoutes from "./pages/AdminRoutes";
 import RedirectIfAuthenticated from "./components/RedirectIfAuthenticated";
 import OffCanvasLayout from "./layouts/OffCanvasLayout";
+import AdminTrips from "./pages/AdminTrips";
 
 function App() {
   const dispatch = useDispatch();
@@ -67,13 +68,15 @@ const isDashboardPage = () => {
     '/attendance',
     '/profile',
     '/bookings',
+    '/booking',
     '/notifications',
     '/map-view',
     '/reports',
     '/settings',
     '/help',
     '/driver-profile',
-    '/parent-profile'
+    '/parent-profile',
+    '/admin/trips'
   ];
   return dashboardPaths.some(path => location.pathname.startsWith(path));
 };
@@ -140,6 +143,11 @@ const isDashboardPage = () => {
               <BookingsPage />
             </RouteGuard>
           } />
+          <Route path="/booking" element={
+            <RouteGuard allowedRoles={["user", "parent"]}>
+              <BookingPage />
+            </RouteGuard>
+          } />
           <Route path="/admin/bookings" element={
             <RouteGuard allowedRoles={["admin", "manager"]}>
               <AdminBookings />
@@ -195,6 +203,11 @@ const isDashboardPage = () => {
               <ParentProfile />
             </RouteGuard>
           } />
+          <Route path="/admin/trips" element={
+            <RouteGuard allowedRoles={["admin", "manager"]}>
+              <AdminTrips />
+            </RouteGuard>
+          } />
         </Route>
         {/* باقي الصفحات العامة كما هي */}
         <Route path="/" element={<Home />} />
@@ -218,7 +231,6 @@ const isDashboardPage = () => {
             <AdminLogin />
           </RedirectIfAuthenticated>
         } />
-        <Route path="/booking" element={<BookingPage />} />
         <Route path="/booking-confirmation" element={<BookingConfirmation />} />
         {/* Catch all route - redirect to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
