@@ -6,22 +6,62 @@ import AdvancedLeafletMap from './AdvancedLeafletMap'
 import socketService from "../services/socketService"
 import { fetchActiveBuses, setSelectedBus } from "../redux/trackingSlice"
 
-const LiveTrackingMap = ({ routeId = null, busId = null, userRole = "parent" }) => {
+function getClosestPointOnRoute(busLat, busLng, routePoints) {
+  let minDist = Infinity;
+  let closest = routePoints[0];
+  routePoints.forEach(pt => {
+    if (!pt || pt.length !== 2) return;
+    const dist = Math.sqrt(Math.pow(pt[0] - busLat, 2) + Math.pow(pt[1] - busLng, 2));
+    if (dist < minDist) {
+      minDist = dist;
+      closest = pt;
+    }
+  });
+  return closest;
+}
+
+const LiveTrackingMap = ({ routeId = null, busId = null, userRole = "parent", buses: busesProp = null, routes: routesProp = null }) => {
   const dispatch = useDispatch()
-  const { buses, selectedBus, isLoading, error, socketConnected, lastUpdate } = useSelector(
+  const { selectedBus, isLoading, error, socketConnected, lastUpdate } = useSelector(
     (state) => state.tracking
   )
-  const [routes, setRoutes] = useState([])
+  // --- جديد: استخدم البيانات الممررة من props إذا وجدت ---
+  const [routes, setRoutes] = useState(routesProp || [])
   const [stops, setStops] = useState([])
+  // لا تجلب الباصات من redux، بل من props
+  const [buses, setBuses] = useState(busesProp || [])
+
+  // إذا تغيرت props، حدث الحالة
+  useEffect(() => {
+    if (routesProp) {
+      setRoutes(routesProp)
+      console.log("🚦 routesProp in LiveTrackingMap:", routesProp);
+    }
+  }, [routesProp])
+  useEffect(() => {
+    if (busesProp) setBuses(busesProp)
+  }, [busesProp])
 
   // Connect to socket on component mount
   useEffect(() => {
-    socketService.connect()
-    
-    return () => {
-      socketService.leaveTracking()
+    // parent/student: اشترك فقط في الباص المختار
+    if ((userRole === 'parent' || userRole === 'student') && busId) {
+      socketService.connect()
+      socketService.joinBusTracking(busId)
+      return () => { socketService.leaveTracking() }
     }
-  }, [])
+    // باقي الأدوار: اشترك في كل الباصات المعروضة
+    if (Array.isArray(buses) && buses.length > 0) {
+      socketService.connect()
+      buses.forEach(bus => {
+        const id = bus._id || bus.id
+        if (id) socketService.joinBusTracking(id)
+      })
+      return () => { socketService.leaveTracking() }
+    }
+    // افتراضيًا: لا اشتراك
+    return () => { socketService.leaveTracking() }
+  }, [userRole, busId, buses])
 
   // Fetch active buses on component mount
   useEffect(() => {
@@ -42,79 +82,6 @@ const LiveTrackingMap = ({ routeId = null, busId = null, userRole = "parent" }) 
       socketService.leaveTracking()
     }
   }, [busId, routeId])
-
-  // Sample route data (you can fetch this from API later)
-  useEffect(() => {
-    const sampleRoutes = [
-      {
-        id: 42,
-        name: "Westside Express",
-        color: "#3B82F6",
-        isActive: true,
-        path: "M 10,50 Q 30,10 50,50 T 90,50",
-      },
-      {
-        id: 15,
-        name: "Downtown Loop",
-        color: "#EF4444",
-        isActive: true,
-        path: "M 20,80 Q 50,20 80,80",
-      },
-      {
-        id: 28,
-        name: "Northside Route",
-        color: "#10B981",
-        isActive: true,
-        path: "M 10,20 Q 50,60 90,20",
-      },
-    ]
-
-    const sampleStops = [
-      {
-        id: 1,
-        name: "Westside Elementary",
-        address: "123 School Street",
-        lat: 37.7849,
-        lng: -122.4094,
-        type: "school",
-        studentCount: 45,
-        nextArrival: "7:15 AM",
-      },
-      {
-        id: 2,
-        name: "Maple & Oak Street",
-        address: "Maple Ave & Oak St",
-        lat: 37.7799,
-        lng: -122.4144,
-        type: "pickup",
-        studentCount: 8,
-        nextArrival: "7:12 AM",
-      },
-      {
-        id: 3,
-        name: "Central Station",
-        address: "100 Central Ave",
-        lat: 37.7749,
-        lng: -122.4194,
-        type: "pickup",
-        studentCount: 12,
-        nextArrival: "7:23 AM",
-      },
-      {
-        id: 4,
-        name: "Pine Street Stop",
-        address: "Pine St & 5th Ave",
-        lat: 37.7949,
-        lng: -122.4294,
-        type: "dropoff",
-        studentCount: 6,
-        nextArrival: "7:18 AM",
-      },
-    ]
-
-    setRoutes(sampleRoutes)
-    setStops(sampleStops)
-  }, [])
 
   // Robustly handle any buses shape and always show demo buses if no real buses
   let filteredBuses = Array.isArray(buses) ? buses : [];
@@ -143,99 +110,29 @@ const LiveTrackingMap = ({ routeId = null, busId = null, userRole = "parent" }) 
   }
 
   // Transform buses data for map component
-  let mapBuses = [];
-  if (filteredBuses.length > 0 && filteredBuses[0].bus && filteredBuses[0].location) {
-    mapBuses = filteredBuses
-      .filter(bus => bus.location)
-      .map(bus => ({
-        id: bus.bus.id,
-        number: bus.bus.number,
-        route: `Route #${bus.bus.route_id || 'Unknown'}`,
-        driver: "Driver Name",
-        lat: bus.location.latitude,
-        lng: bus.location.longitude,
-        status: bus.location.status,
-        passengers: 0,
-        capacity: bus.bus.capacity,
-        speed: bus.location.speed,
-        heading: bus.location.heading,
-        nextStop: bus.location.next_station || "Unknown",
-        eta: "Calculating...",
-        isMoving: bus.location.speed > 0,
-        lastUpdate: bus.location.timestamp,
-        batteryLevel: bus.location.battery_level || 100,
-        signalStrength: bus.location.signal_strength || 100,
-      }));
-  } else if (filteredBuses.length > 0 && filteredBuses[0].id && filteredBuses[0].lat && filteredBuses[0].lng) {
-    mapBuses = filteredBuses;
-  }
+  let mapBuses = Array.isArray(buses) ? buses.map(bus => ({
+    id: bus._id || bus.id,
+    number: bus.BusNumber || bus.number,
+    route: bus.route_id?.name || bus.route_id || bus.route || "",
+    route_id: bus.route_id?._id || bus.route_id || bus.route || "", // أضف هذا السطر
+    driver: bus.assigned_driver_id?.firstName ? `${bus.assigned_driver_id.firstName} ${bus.assigned_driver_id.lastName}` : bus.driver || "",
+    lat: bus.currentLocation?.lat ?? bus.currentLocation?.latitude ?? bus.lat,
+    lng: bus.currentLocation?.lng ?? bus.currentLocation?.long ?? bus.currentLocation?.longitude ?? bus.lng ?? bus.long ?? bus.longitude,
+    status: bus.status || "active",
+    passengers: bus.passengers || 0,
+    capacity: bus.capacity || 0,
+    speed: bus.speed || 0,
+    heading: bus.heading || 0,
+    nextStop: bus.nextStop || "",
+    eta: bus.eta || "",
+    isMoving: bus.isMoving || true,
+    lastUpdate: bus.lastUpdate || new Date().toISOString(),
+    batteryLevel: bus.batteryLevel || 100,
+    signalStrength: bus.signalStrength || 100,
+  })) : []
 
-  // بيانات تجريبية fallback
-  const demoBuses = [
-    {
-      id: "DEMO001",
-      number: "كورنيش النيل",
-      route: "Route #1",
-      driver: "أحمد محمد",
-      lat: 24.088269,
-      lng: 32.906964,
-      status: "active",
-      passengers: 30,
-      capacity: 50,
-      speed: 35,
-      heading: 45,
-      nextStop: "شارع كورنيش النيل",
-      eta: "7:15 ص",
-      isMoving: true,
-      lastUpdate: new Date().toISOString(),
-      batteryLevel: 90,
-      signalStrength: 95,
-    },
-    {
-      id: "DEMO002",
-      number: "شارع المستشفى",
-      route: "Route #2",
-      driver: "منى علي",
-      lat: 24.089272,
-      lng: 32.908548,
-      status: "active",
-      passengers: 20,
-      capacity: 50,
-      speed: 28,
-      heading: 60,
-      nextStop: "شارع المحطة",
-      eta: "7:20 ص",
-      isMoving: true,
-      lastUpdate: new Date().toISOString(),
-      batteryLevel: 85,
-      signalStrength: 90,
-    },
-    {
-      id: "DEMO003",
-      number: "طريق الأستاد",
-      route: "Route #3",
-      driver: "خالد حسن",
-      lat: 24.095245,
-      lng: 32.899451,
-      status: "active",
-      passengers: 15,
-      capacity: 50,
-      speed: 42,
-      heading: 90,
-      nextStop: "طريق الأستاد",
-      eta: "7:30 ص",
-      isMoving: true,
-      lastUpdate: new Date().toISOString(),
-      batteryLevel: 80,
-      signalStrength: 88,
-    }
-  ];
-
-  if (!Array.isArray(mapBuses) || mapBuses.length === 0) {
-    mapBuses = demoBuses;
-  }
-
-  // If still no buses, show a fallback message
+  // ابحث عن أي استخدام لـ demoBuses واحذفه أو تجاهله
+  // في مكان mapBuses:
   if (!Array.isArray(mapBuses) || mapBuses.length === 0) {
     return <div style={{textAlign:'center',marginTop:'2rem',color:'#888'}}>لا توجد بيانات باصات متاحة حالياً</div>;
   }
@@ -247,6 +144,37 @@ const LiveTrackingMap = ({ routeId = null, busId = null, userRole = "parent" }) 
   const handleStopClick = (stop) => {
     console.log("Stop clicked:", stop)
   }
+
+  useEffect(() => {
+    // فحص استقبال بيانات التتبع الحي
+    const handler = (data) => {
+      console.log('🟢 [Socket] busLocationUpdate:', data);
+    };
+    socketService.on('busLocationUpdate', handler);
+    return () => socketService.off('busLocationUpdate', handler);
+  }, []);
+
+  useEffect(() => {
+    // فحص صحة إحداثيات الباصات وربطها بالمسار
+    if (!Array.isArray(buses) || !Array.isArray(routes)) return;
+    buses.forEach(bus => {
+      const lat = bus.currentLocation?.lat || bus.lat;
+      const lng = bus.currentLocation?.long || bus.lng;
+      const hasValidCoords = typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng);
+      const route = routes.find(r => (r._id || r.id) === (bus.route_id?._id || bus.route_id || bus.route));
+      console.log('🔵 Bus:', bus.BusNumber || bus.number || bus._id, '| lat:', lat, '| lng:', lng, '| valid:', hasValidCoords, '| route found:', !!route);
+      if (hasValidCoords && route) {
+        // snap-to-route (فقط طباعة)
+        const points = [
+          route.start_point && [route.start_point.lat, route.start_point.long],
+          ...(Array.isArray(route.stops) ? route.stops.map(stop => [stop.lat, stop.long || stop.lng]) : []),
+          route.end_point && [route.end_point.lat, route.end_point.long]
+        ].filter(pt => Array.isArray(pt) && pt.length === 2 && pt[0] != null && pt[1] != null && !isNaN(pt[0]) && !isNaN(pt[1]));
+        const [snapLat, snapLng] = getClosestPointOnRoute(lat, lng, points);
+        console.log('🟡 Snap-to-route:', { bus: bus.BusNumber || bus.number || bus._id, orig: [lat, lng], snapped: [snapLat, snapLng] });
+      }
+    });
+  }, [buses, routes]);
 
   if (isLoading && buses.length === 0) {
     return (
@@ -318,6 +246,7 @@ const LiveTrackingMap = ({ routeId = null, busId = null, userRole = "parent" }) 
         selectedRouteId={routeId}
         onBusClick={handleBusClick}
         buses={mapBuses}
+        routes={routes}
       />
 
       {/* Bus Status Panel */}
@@ -369,11 +298,11 @@ const LiveTrackingMap = ({ routeId = null, busId = null, userRole = "parent" }) 
               <div className="space-y-1">
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Latitude:</span>
-                  <span className="text-sm font-medium">{selectedBus.lat.toFixed(6)}</span>
+                  <span className="text-sm font-medium">{typeof selectedBus.lat === 'number' && !isNaN(selectedBus.lat) ? selectedBus.lat.toFixed(6) : '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Longitude:</span>
-                  <span className="text-sm font-medium">{selectedBus.lng.toFixed(6)}</span>
+                  <span className="text-sm font-medium">{typeof selectedBus.lng === 'number' && !isNaN(selectedBus.lng) ? selectedBus.lng.toFixed(6) : '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Updated:</span>

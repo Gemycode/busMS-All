@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import axios from 'axios';
 
 // بيانات تجريبية للرحلات والحجوزات
 const availableTrips = [
@@ -120,14 +121,28 @@ const BookingPage = () => {
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    
     try {
-      // Simulate API call for internal booking
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      // جلب التوكن من localStorage
+      const userData = JSON.parse(localStorage.getItem('user')) || {};
+      const token = userData.token || '';
+      // إرسال طلب الحجز للـ API
+      await axios.post('/api/bookings/create', {
+        // يجب تحديد studentId وbusId وrouteId حسب اختيار المستخدم
+        // هنا مثال: استخدم بيانات تجريبية أو اربطها بالاختيارات الفعلية
+        studentId: userData.id || userData._id || '',
+        busId: selectedRoute.busId || '',
+        routeId: selectedRoute.id || '',
+        date: selectedDate,
+        time: selectedTime,
+        passengerCount,
+        bookingType,
+        passengerData,
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       // Navigate to confirmation page
-      navigate('/booking-confirmation', { 
-        state: { 
+      navigate('/booking-confirmation', {
+        state: {
           bookingData: {
             route: selectedRoute,
             date: selectedDate,
@@ -141,6 +156,7 @@ const BookingPage = () => {
       });
     } catch (error) {
       console.error('Booking error:', error);
+      alert('فشل في إنشاء الحجز. تأكد من البيانات وحاول مرة أخرى.');
     } finally {
       setIsLoading(false);
     }

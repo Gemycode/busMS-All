@@ -50,7 +50,10 @@ const DynamicModal = ({ isOpen, onClose, onSubmit, schema, title, initialData, c
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(form);
+    if (typeof onSubmit === 'function') {
+      onSubmit(form);
+    }
+    // إذا لم تكن دالة، تجاهل ولا تفعل شيئًا
   };
 
   if (!isOpen) return null;

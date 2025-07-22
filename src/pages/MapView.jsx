@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link, useLocation } from "react-router-dom"
 import LiveTrackingMap from "../components/LiveTrackingMap"
 import TrackingTestPanel from "../components/TrackingTestPanel"
+import axios from "axios"
 
 const MapView = () => {
   const [viewMode, setViewMode] = useState("all") // all, route, bus
@@ -12,23 +13,81 @@ const MapView = () => {
   const [showFilters, setShowFilters] = useState(false)
   const [showTestPanel, setShowTestPanel] = useState(false)
 
-  const routes = [
-    { id: "42", name: "Route #42 - Westside Express" },
-    { id: "15", name: "Route #15 - Downtown Loop" },
-    { id: "28", name: "Route #28 - Northside Route" },
-  ]
+  // --- جديد: حالة الدور والبيانات ---
+  const [role, setRole] = useState("")
+  const [userId, setUserId] = useState("")
+  const [buses, setBuses] = useState([])
+  const [routes, setRoutes] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
-  const buses = [
-    { id: "1042", name: "Bus #1042" },
-    { id: "1087", name: "Bus #1087" },
-    { id: "1156", name: "Bus #1156" },
-  ]
+  // جلب بيانات المستخدم من localStorage (يمكنك تعديله حسب نظامك)
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem("user")) || {};
+    setRole(userData.role || "")
+    setUserId(userData.id || userData._id || "")
+  }, [])
+
+  // جلب بيانات الباصات والمسارات حسب الدور
+  useEffect(() => {
+    if (!role || !userId) return;
+    setLoading(true)
+    axios.get(`/api/dashboard/map-data?role=${role}&userId=${userId}`)
+      .then(res => {
+        setBuses(res.data.buses || [])
+        setRoutes(res.data.routes || [])
+        setLoading(false)
+        console.log('🚦 routes from API:', res.data.routes);
+      })
+      .catch(err => {
+        setError("فشل في جلب بيانات الخريطة")
+        setLoading(false)
+      })
+  }, [role, userId])
+
+  // منطق اختيار الباص للـ parent/student
+  const isParentOrStudent = role === "parent" || role === "student"
+  const busesForSelect = buses.map(bus => ({ id: bus._id || bus.id, name: bus.BusNumber || bus.number }))
+  const hasSingleBus = isParentOrStudent && busesForSelect.length === 1
+  const hasMultipleBuses = isParentOrStudent && busesForSelect.length > 1
+
+  // إذا parent/student وباص واحد فقط: اختاره تلقائيًا
+  useEffect(() => {
+    if (hasSingleBus) {
+      setSelectedBus(busesForSelect[0].id)
+    }
+  }, [hasSingleBus, busesForSelect])
+
+  // إذا تم تغيير الدور أو الباصات: إعادة تعيين الاختيار
+  useEffect(() => {
+    if (!isParentOrStudent) {
+      setSelectedBus("")
+    }
+  }, [role, buses])
 
   // Read busId and routeId from query params for deep linking from notifications
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const busIdFromQuery = params.get('busId');
   const routeIdFromQuery = params.get('routeId');
+
+  // --- تمرير البيانات لمكون الخريطة ---
+  let busesToShow = buses
+  let routesToShow = routes
+  let busIdProp = busIdFromQuery || selectedBus || null
+  let routeIdProp = routeIdFromQuery || (viewMode === "route" ? selectedRoute : null)
+
+  if (isParentOrStudent) {
+    // parent/student: عرض باص واحد فقط (المختار)
+    busesToShow = buses.filter(b => (b._id || b.id) === busIdProp)
+    // عرض المسار الخاص بالباص فقط
+    const busObj = buses.find(b => (b._id || b.id) === busIdProp)
+    if (busObj && busObj.route_id) {
+      routesToShow = routes.filter(r => (r._id || r.id) === (busObj.route_id._id || busObj.route_id || ""))
+    } else {
+      routesToShow = []
+    }
+  }
 
   return (
     <div className="font-sans text-gray-800 bg-gray-50 min-h-screen">
@@ -42,12 +101,14 @@ const MapView = () => {
                 <p >Real-time GPS tracking and route monitoring</p>
               </div>
               <div className="mt-4 md:mt-0 flex space-x-3">
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="px-4 py-2 bg-brand-beige text-brand-dark-blue font-medium rounded-md hover:bg-opacity-90 transition-all duration-200"
-                >
-                  <i className="fas fa-filter mr-2"></i>Filters
-                </button>
+                {!isParentOrStudent && (
+                  <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="px-4 py-2 bg-brand-beige text-brand-dark-blue font-medium rounded-md hover:bg-opacity-90 transition-all duration-200"
+                  >
+                    <i className="fas fa-filter mr-2"></i>Filters
+                  </button>
+                )}
                 <button
                   onClick={() => setShowTestPanel(!showTestPanel)}
                   className="px-4 py-2 bg-yellow-500 text-white font-medium rounded-md hover:bg-opacity-90 transition-all duration-200"
@@ -75,8 +136,25 @@ const MapView = () => {
               </div>
             )}
 
-            {/* Filters Panel */}
-            {showFilters && (
+            {/* اختيار الباص للـ parent/student */}
+            {hasMultipleBuses && (
+              <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h3 className="text-lg font-bold text-brand-dark-blue mb-4">اختر الباص الخاص بك</h3>
+                <select
+                  value={selectedBus}
+                  onChange={e => setSelectedBus(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue"
+                >
+                  <option value="">اختر باص...</option>
+                  {busesForSelect.map(bus => (
+                    <option key={bus.id} value={bus.id}>{bus.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Filters Panel (لغير parent/student) */}
+            {showFilters && !isParentOrStudent && (
               <div className="bg-white rounded-lg shadow-md p-6 mb-8">
                 <h3 className="text-lg font-bold text-brand-dark-blue mb-4">Map Filters</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -103,7 +181,7 @@ const MapView = () => {
                       >
                         <option value="">Choose a route...</option>
                         {routes.map((route) => (
-                          <option key={route.id} value={route.id}>
+                          <option key={route._id || route.id} value={route._id || route.id}>
                             {route.name}
                           </option>
                         ))}
@@ -121,8 +199,8 @@ const MapView = () => {
                       >
                         <option value="">Choose a bus...</option>
                         {buses.map((bus) => (
-                          <option key={bus.id} value={bus.id}>
-                            {bus.name}
+                          <option key={bus._id || bus.id} value={bus._id || bus.id}>
+                            {bus.BusNumber || bus.number}
                           </option>
                         ))}
                       </select>
@@ -146,11 +224,19 @@ const MapView = () => {
             )}
 
             {/* Live Tracking Map */}
-            <LiveTrackingMap
-              routeId={routeIdFromQuery || (viewMode === "route" ? selectedRoute : null)}
-              busId={busIdFromQuery || (viewMode === "bus" ? selectedBus : null)}
-              userRole="admin"
-            />
+            {loading ? (
+              <div className="text-center py-16 text-gray-500">جاري تحميل بيانات الخريطة...</div>
+            ) : error ? (
+              <div className="text-center py-16 text-red-500">{error}</div>
+            ) : (
+              <LiveTrackingMap
+                routeId={routeIdProp}
+                busId={busIdProp}
+                userRole={role}
+                buses={busesToShow}
+                routes={routesToShow}
+              />
+            )}
 
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">

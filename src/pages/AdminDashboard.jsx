@@ -72,6 +72,7 @@ const AdminDashboard = () => {
   const [tempLatLng, setTempLatLng] = useState(null);
   const [pointName, setPointName] = useState("");
   const [pointType, setPointType] = useState(null); // 'start' or 'end'
+  const [pointTypeSelect, setPointTypeSelect] = useState(""); // 'gathering', 'pickup', 'dropoff'
 
   const [trendData, setTrendData] = useState(null);
 
@@ -1340,6 +1341,7 @@ const AdminDashboard = () => {
           <DynamicModal
             isOpen={showStartMapModal || showEndMapModal}
             onClose={() => { setShowStartMapModal(false); setShowEndMapModal(false); setTempLatLng(null); setPointName(""); }}
+            onSubmit={() => {}} // دالة فارغة تمنع الخطأ
             title={pointType === 'start' ? "اختر نقطة البداية على الخريطة" : "اختر نقطة النهاية على الخريطة"}
             schema={{}}
           >
@@ -1348,6 +1350,7 @@ const AdminDashboard = () => {
               showControls={false}
               onMapClick={({ lat, lng }) => setTempLatLng({ lat, lng })}
               stops={(pointType === 'start' && startPoint) ? [startPoint] : (pointType === 'end' && endPoint) ? [endPoint] : []}
+              showLegend={false}
             />
             {tempLatLng && (
               <div className="mt-4 p-4 bg-gray-50 rounded shadow flex flex-col gap-2">
@@ -1363,14 +1366,21 @@ const AdminDashboard = () => {
                   <button
                     className="px-3 py-1 bg-green-600 text-white rounded"
                     onClick={() => {
-                      if (pointName) {
-                        if (pointType === 'start') setStartPoint({ name: pointName, lat: tempLatLng.lat, long: tempLatLng.lng });
-                        if (pointType === 'end') setEndPoint({ name: pointName, lat: tempLatLng.lat, long: tempLatLng.lng });
-                        setShowStartMapModal(false);
-                        setShowEndMapModal(false);
-                        setTempLatLng(null);
-                        setPointName("");
+                      if (!pointName) return;
+                      // حماية: تأكد من وجود lat وlng أو long أو longitude
+                      let lat = tempLatLng?.lat;
+                      let lng = tempLatLng?.lng ?? tempLatLng?.long ?? tempLatLng?.longitude;
+                      console.log('حفظ نقطة:', { lat, lng, tempLatLng }); // تتبع القيم
+                      if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
+                        alert('يجب اختيار نقطة صحيحة على الخريطة (lat/lng)');
+                        return;
                       }
+                      if (pointType === 'start') setStartPoint({ name: pointName, lat, long: lng });
+                      if (pointType === 'end') setEndPoint({ name: pointName, lat, long: lng });
+                      setShowStartMapModal(false);
+                      setShowEndMapModal(false);
+                      setTempLatLng(null);
+                      setPointName("");
                     }}
                     disabled={!pointName}
                   >
@@ -1389,7 +1399,7 @@ const AdminDashboard = () => {
         )}
         {/* مودال إضافة محطة */}
         {showMapModal && (
-          <DynamicModal isOpen={showMapModal} onClose={() => setShowMapModal(false)} title="اختر موقع المحطة على الخريطة" schema={{}}>
+          <DynamicModal isOpen={showMapModal} onClose={() => setShowMapModal(false)} onSubmit={() => {}} title="اختر موقع المحطة على الخريطة" schema={{}}>
             <AdvancedLeafletMap
               height="400px"
               showControls={false}
@@ -1397,32 +1407,31 @@ const AdminDashboard = () => {
                 setTempLatLng({ lat, lng });
                 setPointType('stop');
               }}
-              stops={(Array.isArray(stops) ? stops : [])}
+              showLegend={false}
             />
             {tempLatLng && pointType === 'stop' && (
               <div className="mt-4 p-4 bg-gray-50 rounded shadow flex flex-col gap-2">
-                <label className="font-bold text-sm">اسم المحطة:</label>
+                <label className="font-bold text-sm">اسم المحطة (اختياري):</label>
                 <input
                   type="text"
                   value={pointName}
                   onChange={e => setPointName(e.target.value)}
                   className="border rounded px-2 py-1"
-                  placeholder="ادخل اسم المحطة"
+                  placeholder="ادخل اسم المحطة أو اتركه فارغًا لإضافة Waypoint"
                 />
                 <div className="flex gap-2 mt-2">
                   <button
                     className="px-3 py-1 bg-brand-medium-blue text-white rounded"
                     onClick={() => {
-                      if (pointName) {
-                        setStops((Array.isArray(stops) ? stops : []).concat({ name: pointName, lat: tempLatLng.lat, long: tempLatLng.lng }));
-                        setShowMapModal(false);
-                        setTempLatLng(null);
-                        setPointName("");
-                      }
+                      const name = pointName.trim() || `Waypoint ${stops.length + 1}`;
+                      setStops((Array.isArray(stops) ? stops : []).concat({ name, lat: tempLatLng.lat, long: tempLatLng.lng }));
+                      setShowMapModal(false);
+                      setTempLatLng(null);
+                      setPointName("");
                     }}
-                    disabled={!pointName}
+                    // يمكن حفظ النقطة حتى لو الاسم فارغ (لـ Waypoint)
                   >
-                    حفظ المحطة
+                    حفظ النقطة
                   </button>
                   <button
                     className="px-3 py-1 bg-gray-300 text-gray-800 rounded"
