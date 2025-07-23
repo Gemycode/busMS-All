@@ -7,6 +7,7 @@ import api from '../redux/api';
 import Toast from '../components/Toast';
 import { fetchRoutes } from '../redux/routeSlice';
 import { fetchTrips } from '../redux/tripsSlice';
+import { fetchChildren, addChild } from '../redux/userSlice';
 
 // بيانات تجريبية للرحلات والحجوزات
 const availableTrips = [
@@ -25,6 +26,7 @@ const BookingPage = () => {
   const dispatch = useDispatch();
   const { routes, loading: routesLoading, error: routesError } = useSelector(state => state.routes);
   const { trips, loading: tripsLoading, error: tripsError } = useSelector(state => state.trips);
+  const { user, children, childrenLoading, childrenError } = useSelector(state => state.user);
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -36,10 +38,29 @@ const BookingPage = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [toast, setToast] = useState({ show: false, type: 'success', message: '' });
+  const [showAddChildModal, setShowAddChildModal] = useState(false);
+  const [childForm, setChildForm] = useState({ firstName: '', lastName: '', email: '', password: '' });
+  const { addChildLoading, addChildError, addChildSuccess } = useSelector(state => state.user);
 
   useEffect(() => {
     dispatch(fetchRoutes());
   }, [dispatch]);
+
+  // جلب الأبناء إذا كان المستخدم Parent
+  useEffect(() => {
+    if (user && user.role === 'parent') {
+      dispatch(fetchChildren());
+    }
+  }, [user, dispatch]);
+
+  // عند نجاح إضافة طفل، أغلق المودال وافرغ الفورم وجلب الأبناء
+  useEffect(() => {
+    if (addChildSuccess) {
+      setShowAddChildModal(false);
+      setChildForm({ firstName: '', lastName: '', email: '', password: '' });
+      dispatch(fetchChildren());
+    }
+  }, [addChildSuccess, dispatch]);
 
   // Passenger form data
   const [passengerData, setPassengerData] = useState({
@@ -55,6 +76,25 @@ const BookingPage = () => {
     specialNeeds: '',
     notes: ''
   });
+
+  useEffect(() => {
+    if (user && user.role === 'parent' && Array.isArray(children) && children.length > 0) {
+      if (!passengerData.studentId) {
+        setPassengerData(prev => ({ ...prev, studentId: children[children.length - 1]._id || children[children.length - 1].id }));
+      }
+    }
+    // eslint-disable-next-line
+  }, [children]);
+
+  useEffect(() => {
+    if (addChildSuccess && user && user.role === 'parent' && Array.isArray(children) && children.length > 0) {
+      setPassengerData(prev => ({
+        ...prev,
+        studentId: children[children.length - 1]._id || children[children.length - 1].id
+      }));
+    }
+    // eslint-disable-next-line
+  }, [addChildSuccess, children]);
 
   // Get available dates (next 30 days)
   const getAvailableDates = () => {
@@ -107,10 +147,10 @@ const BookingPage = () => {
     setIsLoading(true);
     setToast({ show: false, type: 'success', message: '' });
     try {
-      // إرسال الطلب للباك اند مع tripId فقط
+      const studentIdToSend = user && user.role === 'parent' ? passengerData.studentId : /* منطق آخر للطالب */ '';
       const res = await api.post('/bookings/create', {
         tripId: selectedTrip._id,
-        studentId: /* ضع هنا منطق جلب الطالب المناسب (مثلاً من المستخدم الحالي أو اختيار من قائمة الأبناء) */ '',
+        studentId: studentIdToSend,
         pickupLocation: {
           name: passengerData.pickupAddress,
           lat: 0, // عدل لاحقًا حسب اختيار المستخدم
@@ -184,6 +224,7 @@ const BookingPage = () => {
                 <div className={`h-2 w-2 rounded-full ${step >= 1 ? 'bg-brand-medium-blue' : 'bg-gray-300'}`}></div>
                 <div className={`h-2 w-2 rounded-full ${step >= 2 ? 'bg-brand-medium-blue' : 'bg-gray-300'}`}></div>
                 <div className={`h-2 w-2 rounded-full ${step >= 3 ? 'bg-brand-medium-blue' : 'bg-gray-300'}`}></div>
+                <div className={`h-2 w-2 rounded-full ${step >= 4 ? 'bg-brand-medium-blue' : 'bg-gray-300'}`}></div>
               </div>
             </div>
           </div>
@@ -192,14 +233,13 @@ const BookingPage = () => {
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-4xl mx-auto">
-          {/* Step 1: Route Selection */}
+          {/* Step 1: اختيار الطريق */}
           {step === 1 && (
             <div>
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold text-brand-dark-blue mb-2">Select Your Route</h2>
                 <p className="text-gray-600">Choose from our available routes and schedules</p>
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {routesLoading ? (
                   <p>Loading routes...</p>
@@ -209,24 +249,24 @@ const BookingPage = () => {
                   <p>No routes available.</p>
                 ) : (
                   routes.map((route) => (
-                    <div
+                  <div
                       key={route._id}
-                      className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-brand-medium-blue"
-                      onClick={() => handleRouteSelect(route)}
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-semibold text-brand-dark-blue">{route.name}</h3>
+                    className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-brand-medium-blue"
+                      onClick={() => { setSelectedRoute(route); setStep(2); setSelectedDate(''); setSelectedTrip(null); }}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-brand-dark-blue">{route.name}</h3>
                         <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                           {route.estimated_time || "N/A"}
-                        </span>
-                      </div>
-                      <div className="space-y-3 mb-4">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <i className="fas fa-map-marker-alt text-brand-medium-blue mr-2"></i>
+                      </span>
+                    </div>
+                    <div className="space-y-3 mb-4">
+                      <div className="flex items-center text-sm text-gray-600">
+                        <i className="fas fa-map-marker-alt text-brand-medium-blue mr-2"></i>
                           <span>{route.start_point?.name || "-"} → {route.end_point?.name || "-"}</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <i className="fas fa-clock text-brand-medium-blue mr-2"></i>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-600">
+                        <i className="fas fa-clock text-brand-medium-blue mr-2"></i>
                           <span>{route.estimated_time || "N/A"}</span>
                         </div>
                       </div>
@@ -244,193 +284,135 @@ const BookingPage = () => {
                           )}
                         </div>
                       </div>
-                      {/* لا يوجد description في بيانات route، إذا أردت أضفها لاحقًا */}
                     </div>
                   ))
+                )}
+                      </div>
+                    </div>
+          )}
+
+          {/* Step 2: اختيار التاريخ */}
+          {step === 2 && selectedRoute && (
+            <div>
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-brand-dark-blue mb-2">Select Date</h2>
+                <p className="text-gray-600">Choose the date for your trip on <span className="font-semibold">{selectedRoute.name}</span></p>
+                  </div>
+              <div className="mb-6">
+                <select
+                  className="w-full border rounded px-3 py-2"
+                  value={selectedDate}
+                  onChange={e => { setSelectedDate(e.target.value); setSelectedTrip(null); if (e.target.value) dispatch(fetchTrips({ routeId: selectedRoute._id, date: e.target.value })); }}
+                >
+                  <option value="">Select a date</option>
+                  {getAvailableDates().map(date => (
+                    <option key={date.value} value={date.value}>{date.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex justify-between">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+                >
+                  Back
+                </button>
+                {selectedDate && (
+                  <button
+                    type="button"
+                    onClick={() => setStep(3)}
+                    className="px-6 py-2 bg-brand-medium-blue hover:bg-brand-dark-blue text-white rounded-md transition-colors"
+                  >
+                    Next
+                  </button>
                 )}
               </div>
             </div>
           )}
 
-          {/* Step 2: Passenger Details */}
-          {step === 2 && (
+          {/* Step 3: اختيار الرحلة */}
+          {step === 3 && selectedRoute && selectedDate && (
             <div>
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-brand-dark-blue mb-2">Passenger Details</h2>
-                <p className="text-gray-600">Provide passenger information and trip preferences</p>
+                <h2 className="text-2xl font-bold text-brand-dark-blue mb-2">Select Trip</h2>
+                <p className="text-gray-600">Choose a trip for <span className="font-semibold">{selectedRoute.name}</span> on <span className="font-semibold">{selectedDate}</span></p>
               </div>
-
-              <div className="bg-white rounded-lg shadow-md p-6">
-                {/* Route Summary */}
-                <div className="bg-brand-beige rounded-lg p-4 mb-6">
-                  <h3 className="font-semibold text-brand-dark-blue mb-2">Selected Route</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-600">Route:</p>
-                      <p className="font-medium">{selectedRoute.name}</p>
+              {tripsLoading ? (
+                <p>Loading trips...</p>
+              ) : tripsError ? (
+                <p className="text-red-600">Error loading trips: {tripsError?.message || tripsError}</p>
+              ) : trips.length === 0 ? (
+                <p>No trips available for this route and date.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  {trips.map(trip => (
+                    <div key={trip._id} className={`border rounded p-4 flex flex-col gap-2 ${selectedTrip && selectedTrip._id === trip._id ? 'border-brand-medium-blue' : ''}`}>
+                      <div><b>Time:</b> {new Date(trip.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                      <div><b>Bus:</b> {trip.busId?.BusNumber || 'N/A'}</div>
+                      <div><b>Driver:</b> {trip.driverId?.firstName} {trip.driverId?.lastName}</div>
+                      <div><b>Status:</b> {trip.status}</div>
+                      <button className="mt-2 px-4 py-2 bg-brand-medium-blue text-white rounded hover:bg-brand-dark-blue" onClick={() => { setSelectedTrip(trip); setStep(4); }}>Book This Trip</button>
                     </div>
-                    <div>
-                      <p className="text-gray-600">Duration:</p>
-                      <p className="font-medium">{selectedRoute.duration}</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
+              )}
+              <div className="flex justify-between">
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+                >
+                  Back
+                </button>
+              </div>
+            </div>
+          )}
 
-                {/* اختيار التاريخ */}
-                {step === 2 && (
-                  <div className="mb-6">
-                    <label className="block mb-2 font-medium">Select Date</label>
-                    <select
-                      className="w-full border rounded px-3 py-2"
-                      value={selectedDate}
-                      onChange={e => handleDateSelect(e.target.value)}
-                    >
-                      <option value="">Select a date</option>
-                      {getAvailableDates().map(date => (
-                        <option key={date.value} value={date.value}>{date.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* بعد اختيار التاريخ، اعرض الرحلات المتاحة: */}
-                {step === 2 && selectedDate && (
-                  <div className="mb-6">
-                    <label className="block mb-2 font-medium">Available Trips</label>
-                    {tripsLoading ? (
-                      <p>Loading trips...</p>
-                    ) : tripsError ? (
-                      <p className="text-red-600">Error loading trips: {tripsError?.message || tripsError}</p>
-                    ) : trips.length === 0 ? (
-                      <p>No trips available for this route and date.</p>
+          {/* Step 4: إدخال بيانات الراكب وتأكيد الحجز */}
+          {step === 4 && selectedTrip && (
+            <div>
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-brand-dark-blue mb-2">Passenger Details & Confirm</h2>
+                <p className="text-gray-600">Enter passenger information and confirm your booking for <span className="font-semibold">{selectedRoute.name}</span> at <span className="font-semibold">{new Date(selectedTrip.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></p>
+              </div>
+                <form onSubmit={handleBookingSubmit} className="space-y-6">
+                {/* اختيار الطفل إذا كان Parent */}
+                {user && user.role === 'parent' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Select Child *</label>
+                    {childrenLoading ? (
+                      <p>Loading children...</p>
+                    ) : childrenError ? (
+                      <p className="text-red-600">{childrenError}</p>
+                    ) : !Array.isArray(children) || children.length === 0 ? (
+                      <div>
+                        <p>No children found. Please add your children.</p>
+                        <button type="button" className="mt-2 px-4 py-2 bg-brand-medium-blue text-white rounded hover:bg-brand-dark-blue" onClick={() => setShowAddChildModal(true)}>Add a Child</button>
+                      </div>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {trips.map(trip => (
-                          <div key={trip._id} className="border rounded p-4 flex flex-col gap-2">
-                            <div><b>Time:</b> {new Date(trip.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                            <div><b>Bus:</b> {trip.busId?.BusNumber || 'N/A'}</div>
-                            <div><b>Driver:</b> {trip.driverId?.firstName} {trip.driverId?.lastName}</div>
-                            <div><b>Status:</b> {trip.status}</div>
-                            <button className="mt-2 px-4 py-2 bg-brand-medium-blue text-white rounded hover:bg-brand-dark-blue" onClick={() => { setSelectedTrip(trip); setStep(3); }}>Book This Trip</button>
-                          </div>
-                        ))}
+                      <div className="flex gap-2 items-center">
+                        <select
+                          value={passengerData.studentId || ''}
+                          onChange={e => setPassengerData(prev => ({ ...prev, studentId: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-medium-blue"
+                          required
+                        >
+                          <option value="">Select Child</option>
+                          {Array.isArray(children) && children.map((child, idx) => (
+                            <option key={child._id || child.id || idx} value={child._id || child.id}>
+                              {child.firstName} {child.lastName}
+                            </option>
+                          ))}
+                        </select>
+                        <button type="button" className="px-3 py-2 bg-brand-medium-blue text-white rounded hover:bg-brand-dark-blue" onClick={() => setShowAddChildModal(true)}>Add a Child</button>
                       </div>
                     )}
                   </div>
                 )}
-
-                <form onSubmit={handleBookingSubmit} className="space-y-6">
-                  {/* Trip Preferences */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-brand-dark-blue mb-4">Trip Preferences</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Travel Date
-                        </label>
-                        <select
-                          value={selectedDate}
-                          onChange={(e) => setSelectedDate(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-medium-blue"
-                          required
-                        >
-                          <option value="">Select Date</option>
-                          {getAvailableDates().map((date) => (
-                            <option key={date.value} value={date.value}>
-                              {date.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Departure Time
-                        </label>
-                        <select
-                          value={selectedTime}
-                          onChange={(e) => setSelectedTime(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-medium-blue"
-                          required
-                        >
-                          <option value="">Select Time</option>
-                          {selectedRoute.schedule.map((time) => (
-                            <option key={time} value={time}>
-                              {time}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Number of Passengers
-                        </label>
-                        <select
-                          value={passengerCount}
-                          onChange={(e) => setPassengerCount(parseInt(e.target.value))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-medium-blue"
-                        >
-                          {[1, 2, 3, 4, 5].map((num) => (
-                            <option key={num} value={num}>
-                              {num} {num === 1 ? 'Passenger' : 'Passengers'}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="mt-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Booking Type
-                      </label>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <label className="flex items-center p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50">
-                          <input
-                            type="radio"
-                            name="bookingType"
-                            value="oneway"
-                            checked={bookingType === 'oneway'}
-                            onChange={(e) => setBookingType(e.target.value)}
-                            className="mr-3"
-                          />
-                          <div>
-                            <div className="font-medium">One Way</div>
-                            <div className="text-sm text-gray-600">Single trip</div>
-                          </div>
-                        </label>
-                        <label className="flex items-center p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50">
-                          <input
-                            type="radio"
-                            name="bookingType"
-                            value="roundtrip"
-                            checked={bookingType === 'roundtrip'}
-                            onChange={(e) => setBookingType(e.target.value)}
-                            className="mr-3"
-                          />
-                          <div>
-                            <div className="font-medium">Round Trip</div>
-                            <div className="text-sm text-gray-600">To and from</div>
-                          </div>
-                        </label>
-                        <label className="flex items-center p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50">
-                          <input
-                            type="radio"
-                            name="bookingType"
-                            value="monthly"
-                            checked={bookingType === 'monthly'}
-                            onChange={(e) => setBookingType(e.target.value)}
-                            className="mr-3"
-                          />
-                          <div>
-                            <div className="font-medium">Monthly Pass</div>
-                            <div className="text-sm text-gray-600">Regular schedule</div>
-                          </div>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
+                {/* إذا لم يكن Parent، أظهر فورم بيانات الراكب العادي */}
+                {(!user || user.role !== 'parent') && (
+                  <>
                   {/* Passenger Information */}
                   <div>
                     <h3 className="text-lg font-semibold text-brand-dark-blue mb-4">Passenger Information</h3>
@@ -533,6 +515,8 @@ const BookingPage = () => {
                       />
                     </div>
                   </div>
+                  </>
+                )}
 
                   {/* Price Summary */}
                   <div className="bg-gray-50 rounded-lg p-4">
@@ -542,6 +526,14 @@ const BookingPage = () => {
                         <span>Route:</span>
                         <span>{selectedRoute.name}</span>
                       </div>
+                    <div className="flex justify-between">
+                      <span>Date:</span>
+                      <span>{selectedDate}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Time:</span>
+                      <span>{new Date(selectedTrip.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
                       <div className="flex justify-between">
                         <span>Passengers:</span>
                         <span>{passengerCount}</span>
@@ -566,7 +558,7 @@ const BookingPage = () => {
                   <div className="flex justify-between">
                     <button
                       type="button"
-                      onClick={() => setStep(1)}
+                    onClick={() => setStep(3)}
                       className="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
                     >
                       Back
@@ -587,7 +579,6 @@ const BookingPage = () => {
                     </button>
                   </div>
                 </form>
-              </div>
             </div>
           )}
 
@@ -626,6 +617,40 @@ const BookingPage = () => {
                 Confirm
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Modal لإضافة طفل جديد */}
+      {showAddChildModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-8 max-w-sm w-full relative">
+            <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-800" onClick={() => setShowAddChildModal(false)}>&times;</button>
+            <h3 className="text-xl font-bold text-brand-dark-blue mb-4">Add a Child</h3>
+            <form onSubmit={e => { e.preventDefault(); dispatch(addChild(childForm)); }} className="space-y-4">
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700">First Name</label>
+                  <input type="text" name="firstName" value={childForm.firstName} onChange={e => setChildForm(f => ({ ...f, firstName: e.target.value }))} required className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700">Last Name</label>
+                  <input type="text" name="lastName" value={childForm.lastName} onChange={e => setChildForm(f => ({ ...f, lastName: e.target.value }))} required className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Email (optional)</label>
+                <input type="email" name="email" value={childForm.email} onChange={e => setChildForm(f => ({ ...f, email: e.target.value }))} className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Password (optional)</label>
+                <input type="password" name="password" value={childForm.password} onChange={e => setChildForm(f => ({ ...f, password: e.target.value }))} className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+              </div>
+              <button type="submit" className="w-full py-2 px-4 bg-brand-dark-blue text-white font-semibold rounded-md hover:bg-brand-medium-blue transition-all duration-200" disabled={addChildLoading}>
+                {addChildLoading ? 'Adding...' : 'Add Child'}
+              </button>
+              {addChildError && <p className="text-red-600 text-sm mt-2">{addChildError}</p>}
+              {addChildSuccess && <p className="text-green-600 text-sm mt-2">Child added successfully!</p>}
+            </form>
           </div>
         </div>
       )}

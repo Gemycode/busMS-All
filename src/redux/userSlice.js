@@ -106,7 +106,7 @@ export const fetchChildren = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await api.get('/users/me/children');
-      return res.data.children;
+      return res.data.data.children;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || 'Failed to fetch children');
     }
@@ -119,7 +119,7 @@ export const addChild = createAsyncThunk(
   async (childData, { rejectWithValue }) => {
     try {
       const res = await api.post('/users/me/children', childData);
-      return res.data.child;
+      return res.data?.data?.child;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || 'Failed to add child');
     }
@@ -305,6 +305,7 @@ const userSlice = createSlice({
       .addCase(addChild.fulfilled, (state, action) => {
         state.addChildLoading = false;
         state.addChildSuccess = true;
+        state.children = Array.isArray(state.children) ? state.children : [];
         state.children.push(action.payload);
       })
       .addCase(addChild.rejected, (state, action) => {
