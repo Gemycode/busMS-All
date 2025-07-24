@@ -5,19 +5,23 @@ import { Link } from 'react-router-dom';
 import LiveTrackingMap from "../components/LiveTrackingMap"
 import { useDispatch, useSelector } from "react-redux";
 import { createAttendance, fetchUserAttendance, clearError, clearSuccess } from "../redux/attendanceSlice";
+import { fetchTrips } from '../redux/tripsSlice';
+import { fetchBookings } from '../redux/bookingSlice';
 import Toast from "../components/Toast";
 
 const DriverDashboard = () => {
   const dispatch = useDispatch();
   const { user } = useSelector(state => state.user);
   const { userAttendances, loading, error, success } = useSelector(state => state.attendance);
+  const { trips, loading: tripsLoading, error: tripsError } = useSelector(state => state.trips);
+  const { bookings, loading: bookingsLoading, error: bookingsError } = useSelector(state => state.bookings);
 
   const [currentTrip, setCurrentTrip] = useState(null);
   const [isOnDuty, setIsOnDuty] = useState(false);
   const [location, setLocation] = useState({ lat: 24.7136, lng: 46.6753 }); // Riyadh coordinates
   const [passengers, setPassengers] = useState([]);
   const [notifications, setNotifications] = useState([]);
-  const [selectedRoute, setSelectedRoute] = useState(null);
+  const [selectedTrip, setSelectedTrip] = useState(null);
   const [currentRoute, setCurrentRoute] = useState(null);
   const [todaySchedule, setTodaySchedule] = useState([]);
   const [vehicleStatus, setVehicleStatus] = useState(null);
@@ -36,35 +40,7 @@ const DriverDashboard = () => {
   const [routeStats, setRouteStats] = useState({}); // { [routeId]: { present: n, absent: n } }
 
   // Dummy data for demonstration
-  const assignedRoutes = [
-    {
-      id: 1,
-      name: "Route A - School Zone",
-      startLocation: "Al Olaya District",
-      endLocation: "King Fahd School",
-      estimatedTime: "45 min",
-      passengers: 12,
-      status: "active",
-      schedule: "07:30 AM - 08:15 AM"
-    },
-    {
-      id: 2,
-      name: "Route B - Residential Area",
-      startLocation: "Al Malaz District",
-      endLocation: "Al Riyadh School",
-      estimatedTime: "35 min",
-      passengers: 8,
-      status: "pending",
-      schedule: "02:30 PM - 03:05 PM"
-    }
-  ];
 
-  const dummyPassengers = [
-    { id: 1, name: "Ahmed Al-Rashid", grade: "5th Grade", pickupTime: "07:30 AM", status: "onboard" },
-    { id: 2, name: "Fatima Al-Zahra", grade: "3rd Grade", pickupTime: "07:35 AM", status: "waiting" },
-    { id: 3, name: "Omar Al-Sayed", grade: "6th Grade", pickupTime: "07:40 AM", status: "onboard" },
-    { id: 4, name: "Aisha Al-Mansour", grade: "4th Grade", pickupTime: "07:45 AM", status: "waiting" }
-  ];
 
   const dummyNotifications = [
     { id: 1, message: "New passenger added to Route A", time: "2 min ago", type: "info" },
@@ -73,14 +49,30 @@ const DriverDashboard = () => {
   ];
 
   useEffect(() => {
-    setPassengers(dummyPassengers);
-    setNotifications(dummyNotifications);
-    // Set user ID for attendance
+    dispatch(fetchBookings());
     if (user?._id) {
+      dispatch(fetchTrips({ driverId: user._id }));
       setAttendanceData(prev => ({ ...prev, personId: user._id }));
       dispatch(fetchUserAttendance({ userId: user._id }));
     }
-  }, [user, dispatch]);
+    setNotifications(dummyNotifications);
+  }, [dispatch, user]);
+
+
+
+  useEffect(() => {
+    if (selectedTrip) {
+      // Assuming you have a way to fetch bookings for a route
+      // This part might need adjustment based on your bookings slice
+      const routePassengers = bookings
+        .filter(booking => booking.routeId?._id === selectedTrip.routeId?._id)
+        .map(booking => booking.studentId)
+        .filter(Boolean);
+      setPassengers(routePassengers);
+    } else {
+      setPassengers([]);
+    }
+  }, [selectedTrip, bookings]);
 
   useEffect(() => {
     if (success) {
@@ -91,11 +83,10 @@ const DriverDashboard = () => {
     }
   }, [success, error, dispatch]);
 
-  const startTrip = (routeId) => {
-    const route = assignedRoutes.find(r => r.id === routeId);
-    setCurrentTrip(route);
-    setIsOnDuty(true);
-    setSelectedRoute(route);
+  const handleTripSelect = (trip) => {
+    setSelectedTrip(trip);
+    setCurrentTrip(trip); // You might want to set the full trip object as the current trip
+    setIsOnDuty(trip.status === 'in-progress'); // Set duty status based on trip status
   };
 
   const endTrip = () => {
@@ -229,7 +220,7 @@ const DriverDashboard = () => {
               <div className="h-10 w-10 bg-brand-medium-blue rounded-full flex items-center justify-center mr-3">
                 <i className="fas fa-bus text-white"></i>
               </div>
-              <h1 className="text-xl font-bold text-brand-dark-blue">Driver Dashboard</h1>
+              <h1 className="text-xl font-bold text-brand-dark-blue">Welcome, {user ? `${user.firstName} ${user.lastName}` : 'Driver'}</h1>
             </div>
             <div className="flex items-center space-x-4">
               <div className="flex items-center">
@@ -258,9 +249,9 @@ const DriverDashboard = () => {
                 <i className="fas fa-route text-brand-medium-blue text-xl"></i>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Routes</p>
+                <p className="text-sm font-medium text-gray-600">Active Trips</p>
                 <p className="text-2xl font-bold text-brand-dark-blue">
-                  {assignedRoutes.filter(r => r.status === 'active').length}
+                  {trips.filter(t => t.status !== 'completed').length}
                 </p>
               </div>
             </div>
@@ -314,105 +305,42 @@ const DriverDashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Assigned Routes */}
+          {/* Assigned Trips */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md">
               <div className="p-6 border-b border-gray-200">
-                <h2 className="text-lg font-bold text-brand-dark-blue">Assigned Routes</h2>
-                <p className="text-gray-600 text-sm">Manage your assigned routes and trips</p>
+                <h3 className="text-lg font-bold text-brand-dark-blue">Assigned Trips</h3>
+                <p className="text-sm text-gray-600">Manage your assigned trips for today</p>
               </div>
               <div className="p-6">
-                <div className="space-y-4">
-                  {assignedRoutes.map((route) => (
-                    <div key={route.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <h3 className="font-semibold text-brand-dark-blue">{route.name}</h3>
-                          <p className="text-sm text-gray-600">
-                            {route.startLocation} → {route.endLocation}
-                          </p>
+                <div className="mt-4 space-y-3">
+                  {tripsLoading ? (
+                    <p>Loading trips...</p>
+                  ) : tripsError ? (
+                    <p className="text-red-500">Error loading trips.</p>
+                  ) : trips.length > 0 ? (
+                    trips.map((trip) => (
+                      <div
+                        key={trip._id}
+                        onClick={() => handleTripSelect(trip)}
+                        className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${selectedTrip?._id === trip._id ? 'bg-brand-medium-blue text-white shadow-lg' : 'bg-gray-100 hover:bg-gray-200'}`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <p className="font-bold">{trip.routeId?.name}</p>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${trip.status === 'completed' ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'}`}>
+                            {trip.status}
+                          </span>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${route.status === 'active'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                          {route.status}
-                        </span>
+                        <p className="text-sm mt-1">{new Date(trip.date).toLocaleDateString()}</p>
                       </div>
-
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <p className="text-xs text-gray-500">Schedule</p>
-                          <p className="text-sm font-medium">{route.schedule}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Duration</p>
-                          <p className="text-sm font-medium">{route.estimatedTime}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Passengers</p>
-                          <p className="text-sm font-medium">{route.passengers}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Status</p>
-                          <p className="text-sm font-medium capitalize">{route.status}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex space-x-3">
-                        {currentTrip?.id === route.id ? (
-                          <button
-                            onClick={endTrip}
-                            className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
-                          >
-                            <i className="fas fa-stop mr-2"></i>
-                            End Trip
-                          </button>
-                        ) : (
-                          !driverAbsentRoutes[route.id] && (
-                            <button
-                              onClick={() => startTrip(route.id)}
-                              disabled={currentTrip !== null}
-                              className="flex-1 bg-brand-medium-blue hover:bg-brand-dark-blue text-white py-2 px-4 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <i className="fas fa-play mr-2"></i>
-                              Start Trip
-                            </button>
-                          )
-                        )}
-
-                        <Link
-                          to={`/map-view?route=${route.id}`}
-                          className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-md text-sm font-medium transition-colors text-center"
-                        >
-                          <i className="fas fa-map mr-2"></i>
-                          View Map
-                        </Link>
-                      </div>
-
-                      {/* Driver Attendance for each route */}
-                      <div className="flex space-x-2 mt-2">
-                        <button
-                          onClick={() => handleDriverAttendance(route.id, 'present')}
-                          className={`px-3 py-1 rounded text-xs font-medium ${attendanceData.status === 'present' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-                        >
-                          Mark Myself attendant
-                        </button>
-                        <button
-                          onClick={() => handleDriverAttendance(route.id, 'absent')}
-                          className={`px-3 py-1 rounded text-xs font-medium ${attendanceData.status === 'absent' ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-                        >
-                          Mark Myself Absent
-                        </button>
-                      </div>
-                      {/* Live stats */}
-                      <div className="mt-2 text-sm">
-                        <span className="font-medium">Live Attendance:</span>
-                        <span className="ml-2 text-green-600">attendant: {routeStats[route.id]?.present || 0}</span>
-                        <span className="ml-2 text-red-600">Absent: {routeStats[route.id]?.absent || 0}</span>
-                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-6">
+                      <i className="fas fa-route text-4xl text-gray-300 mb-3"></i>
+                      <p className="font-medium text-gray-600">No trips assigned for today.</p>
+                      <p className="text-sm text-gray-500">Contact your administrator for assignments.</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>
@@ -473,30 +401,21 @@ const DriverDashboard = () => {
               </div>
               <div className="p-4">
                 <div className="space-y-3">
-                  {passengers.map((passenger) => (
-                    <div key={passenger.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{passenger.name}</p>
-                        <p className="text-xs text-gray-600">{passenger.grade} • {passenger.pickupTime}</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handlePassengerAttendance(passenger.id, currentTrip?.id || assignedRoutes[0].id, 'present')}
-                          className={`px-2 py-1 rounded text-xs font-medium ${passengerAttendance[passenger.id] === 'present' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-                        >
-                          attendant
-                        </button>
-                        <button
-                          onClick={() => handlePassengerAttendance(passenger.id, currentTrip?.id || assignedRoutes[0].id, 'absent')}
-                          className={`px-2 py-1 rounded text-xs font-medium ${passengerAttendance[passenger.id] === 'absent' ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-                        >
-                          Absent
-                        </button>
-                        {passengerAttendance[passenger.id] === 'present' && <span className="ml-2 text-green-600">✅</span>}
-                        {passengerAttendance[passenger.id] === 'absent' && <span className="ml-2 text-red-600">❌</span>}
-                      </div>
-                    </div>
-                  ))}
+                  {selectedTrip ? (
+                    passengers.length > 0 ? (
+                      passengers.map((passenger) => (
+                        <div key={passenger._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{passenger.firstName} {passenger.lastName}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">No passengers for this trip's route.</p>
+                    )
+                  ) : (
+                    <p className="text-sm text-gray-500">Select a trip to view passengers.</p>
+                  )}
                 </div>
               </div>
             </div>

@@ -134,7 +134,7 @@ const LiveTrackingMap = ({ routeId = null, busId = null, userRole = "parent", bu
   // ابحث عن أي استخدام لـ demoBuses واحذفه أو تجاهله
   // في مكان mapBuses:
   if (!Array.isArray(mapBuses) || mapBuses.length === 0) {
-    return <div style={{textAlign:'center',marginTop:'2rem',color:'#888'}}>لا توجد بيانات باصات متاحة حالياً</div>;
+    return <div style={{ textAlign: 'center', marginTop: '2rem', color: '#888' }}>لا توجد بيانات باصات متاحة حالياً</div>;
   }
 
   const handleBusClick = (bus) => {
@@ -196,7 +196,7 @@ const LiveTrackingMap = ({ routeId = null, busId = null, userRole = "parent", bu
           </div>
           <p className="text-red-600 mb-2">Error loading tracking data</p>
           <p className="text-gray-600 text-sm">{error}</p>
-          <button 
+          <button
             onClick={() => dispatch(fetchActiveBuses())}
             className="mt-4 px-4 py-2 bg-brand-medium-blue text-white rounded-md hover:bg-opacity-90"
           >
@@ -269,13 +269,12 @@ const LiveTrackingMap = ({ routeId = null, busId = null, userRole = "parent", bu
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Status:</span>
                   <span
-                    className={`text-sm font-medium ${
-                      selectedBus.status === "active"
-                        ? "text-green-600"
-                        : selectedBus.status === "stopped"
-                          ? "text-red-600"
-                          : "text-yellow-600"
-                    }`}
+                    className={`text-sm font-medium ${selectedBus.status === "active"
+                      ? "text-green-600"
+                      : selectedBus.status === "stopped"
+                        ? "text-red-600"
+                        : "text-yellow-600"
+                      }`}
                   >
                     {selectedBus.status}
                   </span>
@@ -344,13 +343,12 @@ const LiveTrackingMap = ({ routeId = null, busId = null, userRole = "parent", bu
                 <span className="text-gray-600">Bus #{bus.number}</span>
                 <span className="text-gray-500">{Math.round(bus.speed)} km/h</span>
                 <span
-                  className={`font-medium ${
-                    bus.status === "active"
-                      ? "text-green-600"
-                      : bus.status === "stopped"
-                        ? "text-red-600"
-                        : "text-yellow-600"
-                  }`}
+                  className={`font-medium ${bus.status === "active"
+                    ? "text-green-600"
+                    : bus.status === "stopped"
+                      ? "text-red-600"
+                      : "text-yellow-600"
+                    }`}
                 >
                   {bus.status}
                 </span>

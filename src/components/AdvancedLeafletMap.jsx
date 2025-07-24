@@ -28,7 +28,7 @@ const defaultZoom = 13;
 function MapUpdater({ buses, selectedBusId, isTracking }) {
   const map = useMap();
   const prevBusCount = useRef(buses.length);
-  
+
   useEffect(() => {
     // فلتر الباصات التي لديها lat/lng معرفين وصحيحين
     const validBuses = Array.isArray(buses)
@@ -58,7 +58,7 @@ function MapUpdater({ buses, selectedBusId, isTracking }) {
 // مكون لعرض مسار الحافلة
 function BusRoute({ bus, routePath }) {
   if (!routePath || routePath.length < 2) return null;
-  
+
   return (
     <Polyline
       positions={routePath}
@@ -115,9 +115,9 @@ function SearchControl({ onResult }) {
   return null;
 }
 
-const AdvancedLeafletMap = ({ 
-  height = "600px", 
-  showControls = true, 
+const AdvancedLeafletMap = ({
+  height = "600px",
+  showControls = true,
   showCoverage = false,
   showRoutes = true,
   showStops = true,
@@ -170,15 +170,15 @@ const AdvancedLeafletMap = ({
     return L.divIcon({
       className: 'custom-bus-icon',
       html: `
-        <div class="bus-marker-realistic ${bus.status}" style="background-color: ${statusColor}; width:${size}px; height:${size/2}px;">
-          <div class="bus-body" style="width:${size-10}px; height:${size/3}px;"></div>
+        <div class="bus-marker-realistic ${bus.status}" style="background-color: ${statusColor}; width:${size}px; height:${size / 2}px;">
+          <div class="bus-body" style="width:${size - 10}px; height:${size / 3}px;"></div>
           <div class="bus-number-realistic">${bus.number}</div>
           <div class="bus-speed-realistic">${Math.round(bus.speed)} كم/س</div>
           <div class="bus-direction-realistic" style="transform: rotate(${bus.heading}deg)"><i class="fas fa-arrow-up"></i></div>
         </div>
       `,
-      iconSize: [size, size/2],
-      iconAnchor: [size/2, size/4]
+      iconSize: [size, size / 2],
+      iconAnchor: [size / 2, size / 4]
     });
   };
 
@@ -247,51 +247,51 @@ const AdvancedLeafletMap = ({
   // محاكاة حركة الباصات كل ثانية
   useEffect(() => {
     if (!isTracking) return;
-    
+
     const interval = setInterval(() => {
       setAvailableBuses(prevBuses => prevBuses.map(bus => {
         if (bus.status !== 'active' || !bus.isMoving) return bus;
-        
+
         // استخدم المسارات المرسومة من props للحصول على المسار الحالي
         const currentRoute = propBuses.find(r => r.id === bus.routeId);
         if (!currentRoute || !currentRoute.path || currentRoute.path.length === 0) return bus;
-        
+
         // حساب النقطة التالية في المسار
         const nextIndex = (bus.currentRouteIndex + 1) % currentRoute.path.length;
         const currentPoint = currentRoute.path[bus.currentRouteIndex];
         const nextPoint = currentRoute.path[nextIndex];
-        
+
         if (!currentPoint || !nextPoint) return bus;
-        
+
         // حساب المسافة والسرعة
         const latDiff = nextPoint[0] - currentPoint[0];
         const lngDiff = nextPoint[1] - currentPoint[1];
         const distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
-        
+
         // سرعة الباص بالدرجات (تحويل من كم/ساعة) - زيادة السرعة للحركة الواضحة
         const speedInDegrees = (bus.speed / 111000) * 2.0; // زيادة السرعة بشكل كبير للحركة الواضحة
-        
+
         // حساب التقدم نحو النقطة التالية
         const progress = Math.min(speedInDegrees / Math.max(distance, 0.0001), 1);
-        
+
         // حساب الموقع الجديد
         const newLat = currentPoint[0] + (latDiff * progress);
         const newLng = currentPoint[1] + (lngDiff * progress);
-        
+
         // حساب الاتجاه
         const newHeading = Math.atan2(lngDiff, latDiff) * (180 / Math.PI);
-        
+
         // تحديث مؤشر المسار إذا وصلنا للنقطة التالية
         const newRouteIndex = progress >= 0.9 ? nextIndex : bus.currentRouteIndex;
-        
+
         // تحديث السرعة بشكل عشوائي قليلاً للواقعية
         const speedVariation = bus.speed + (Math.random() - 0.5) * 8;
         const newSpeed = Math.max(20, Math.min(50, speedVariation));
-        
+
         // التحقق من الوصول لمحطة تجميع
         const isAtStop = checkIfAtStop(newLat, newLng, bus.routeId);
         const shouldStop = isAtStop && Math.random() < 0.3; // 30% احتمال التوقف في المحطة
-        
+
         const updatedBus = {
           ...bus,
           lat: newLat,
@@ -305,25 +305,25 @@ const AdvancedLeafletMap = ({
           isMoving: !shouldStop,
           status: shouldStop ? 'stopped' : 'active'
         };
-        
+
         // إعادة تشغيل الباص بعد فترة توقف
         if (shouldStop) {
           setTimeout(() => {
-            setAvailableBuses(prev => prev.map(b => 
-              b.id === bus.id 
+            setAvailableBuses(prev => prev.map(b =>
+              b.id === bus.id
                 ? { ...b, isMoving: true, status: 'active', speed: newSpeed }
                 : b
             ));
           }, 3000 + Math.random() * 2000); // توقف بين 3-5 ثوان
         }
-        
+
         return updatedBus;
       }));
-      
+
       // تحديث وقت آخر تحديث في Redux
       dispatch({ type: 'SET_LAST_UPDATE', payload: new Date().toISOString() });
     }, 500); // تقليل الفاصل الزمني لجعل الحركة أكثر سلاسة
-    
+
     return () => clearInterval(interval);
   }, [isTracking, propBuses, dispatch]);
 
@@ -331,11 +331,11 @@ const AdvancedLeafletMap = ({
   const checkIfAtStop = (lat, lng, routeId) => {
     const currentRoute = propBuses.find(r => r.id === routeId);
     if (!currentRoute) return false;
-    
+
     // التحقق من قرب الباص من أي محطة في المسار
     return currentRoute.stops.some(stop => {
       const distance = Math.sqrt(
-        Math.pow(stop.lat - lat, 2) + 
+        Math.pow(stop.lat - lat, 2) +
         Math.pow(stop.lng - lng, 2)
       );
       return distance < 0.0005; // مسافة صغيرة للاعتبار في المحطة
@@ -346,19 +346,19 @@ const AdvancedLeafletMap = ({
   const getNextStop = (routeId, currentIndex) => {
     const currentRoute = propBuses.find(r => r.id === routeId);
     if (!currentRoute) return "غير محدد";
-    
+
     const nextIndex = (currentIndex + 1) % currentRoute.path.length;
     const nextPoint = currentRoute.path[nextIndex];
-    
+
     // البحث عن أقرب محطة للموقع التالي
     const nearestStop = currentRoute.stops.find(stop => {
       const distance = Math.sqrt(
-        Math.pow(stop.lat - nextPoint[0], 2) + 
+        Math.pow(stop.lat - nextPoint[0], 2) +
         Math.pow(stop.lng - nextPoint[1], 2)
       );
       return distance < 0.001; // مسافة صغيرة للاعتبار محطة
     });
-    
+
     return nearestStop ? nearestStop.name : "محطة تالية";
   };
 
@@ -366,17 +366,17 @@ const AdvancedLeafletMap = ({
   const getNextETA = (routeId, currentIndex) => {
     const currentRoute = propBuses.find(r => r.id === routeId);
     if (!currentRoute) return "غير محدد";
-    
+
     const remainingPoints = currentRoute.path.length - currentIndex;
     const estimatedMinutes = Math.ceil(remainingPoints * 0.5); // 30 ثانية لكل نقطة
-    
+
     const now = new Date();
     const eta = new Date(now.getTime() + estimatedMinutes * 60 * 1000);
-    
-    return eta.toLocaleTimeString('ar-EG', { 
-      hour: '2-digit', 
+
+    return eta.toLocaleTimeString('ar-EG', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     });
   };
 
@@ -413,7 +413,7 @@ const AdvancedLeafletMap = ({
           signalStrength: bus.location.signal_strength || 100,
           currentRouteIndex: 0,
         }));
-      
+
       if (transformedBuses.length > 0) {
         setAvailableBuses(transformedBuses);
       }
@@ -906,7 +906,7 @@ const AdvancedLeafletMap = ({
                 }));
                 setNotifiedStops(prev => ({ ...prev, [key]: Date.now() }));
                 if (audioRef.current) {
-                  try { audioRef.current.play(); } catch (e) {}
+                  try { audioRef.current.play(); } catch (e) { }
                 }
               }
             }
@@ -919,7 +919,7 @@ const AdvancedLeafletMap = ({
   // شغل صوت الإشعار عند بدء التتبع للـ parent فقط
   useEffect(() => {
     if (userRole === 'parent' && isTracking && audioRef.current) {
-      try { audioRef.current.play(); } catch (e) {}
+      try { audioRef.current.play(); } catch (e) { }
     }
   }, [isTracking, userRole]);
 
@@ -1037,7 +1037,7 @@ const AdvancedLeafletMap = ({
           <Marker
             key={"bus-" + (route._id || route.id || routeIdx)}
             position={busPos}
-            icon={createBusIcon({ number: route.name || `Bus ${routeIdx+1}`, status: 'active', speed: 30, heading: 0 })}
+            icon={createBusIcon({ number: route.name || `Bus ${routeIdx + 1}`, status: 'active', speed: 30, heading: 0 })}
           />
         </>
       );
@@ -1161,14 +1161,14 @@ const AdvancedLeafletMap = ({
           {typeof onMapClick === 'function' && <MapClickHandler onMapClick={onMapClick} />}
           {/* تحديث الخريطة تلقائياً */}
           <MapUpdater buses={availableBuses} selectedBusId={selectedBusId} isTracking={isTracking} />
-          
+
           {/* رسم المسارات فقط عند بدء التتبع */}
           {isTracking && renderPolylines()}
           {/* رسم الباصات: متحركة عند التتبع، ثابتة عند عدم التتبع */}
           {isTracking ? renderSimulatedPolylinesAndBuses() : renderBusMarkers()}
           {/* عرض المحطات */}
           {showStops && isTracking && <BusStops stops={Array.isArray(routes) ? routes.flatMap(r => r.stops || []) : []} />}
-          
+
           {/* عرض منطقة التغطية */}
           {showCoverage && <CoverageArea center={mapCenter} />}
         </MapContainer>
@@ -1177,31 +1177,31 @@ const AdvancedLeafletMap = ({
         {showControls && (
           <div className="map-controls">
             <h4>خريطة أسوان - تتبع الحافلات</h4>
-            
+
             {/* مؤشر الاتصال */}
             <div className={`status-indicator`}>
               <div className={`status-dot ${socketConnected ? 'connected' : 'disconnected'}`}></div>
               <span>{socketConnected ? 'متصل مباشر' : 'غير متصل'}</span>
             </div>
-            
+
             {/* أزرار التتبع */}
             <div className="tracking-controls">
-              <button 
+              <button
                 className={trackingBtnClass}
                 onClick={isTracking ? stopTracking : startTracking}
               >
                 {trackingBtnIcon} {trackingBtnText}
               </button>
             </div>
-            
+
             {/* الباصات المتاحة */}
             {isTracking && (
               <div className="control-group">
                 <label>الباصات المتاحة:</label>
                 <div className="available-buses">
                   {availableBuses.map(bus => (
-                    <div 
-                      key={bus.id} 
+                    <div
+                      key={bus.id}
                       className={`bus-item ${bus.status}`}
                       onClick={() => handleBusClick(bus)}
                     >
@@ -1218,12 +1218,12 @@ const AdvancedLeafletMap = ({
                 </div>
               </div>
             )}
-            
+
             {/* نوع الخريطة */}
             <div className="control-group">
               <label>نوع الخريطة:</label>
-              <select 
-                value={mapType} 
+              <select
+                value={mapType}
                 onChange={(e) => changeMapType(e.target.value)}
                 style={{ width: '100%', fontSize: '12px' }}
               >
@@ -1233,30 +1233,30 @@ const AdvancedLeafletMap = ({
                 <option value="dark">داكن</option>
               </select>
             </div>
-            
+
             {/* خيارات العرض */}
             <div className="control-group">
               <label>
-                <input 
-                  type="checkbox" 
-                  checked={showStops} 
+                <input
+                  type="checkbox"
+                  checked={showStops}
                   onChange={(e) => setShowStops(e.target.checked)}
                 />
                 إظهار المحطات
               </label>
             </div>
-            
+
             <div className="control-group">
               <label>
-                <input 
-                  type="checkbox" 
-                  checked={showCoverage} 
+                <input
+                  type="checkbox"
+                  checked={showCoverage}
                   onChange={(e) => setShowCoverage(e.target.checked)}
                 />
                 إظهار منطقة التغطية
               </label>
             </div>
-            
+
             {/* إحصائيات سريعة */}
             {isTracking && (
               <div className="control-group">

@@ -46,40 +46,40 @@ function App() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-useEffect(() => {
-  dispatch(loadUserFromStorage());
-}, [dispatch]);
+  useEffect(() => {
+    dispatch(loadUserFromStorage());
+  }, [dispatch]);
 
-// Check if current path is a dashboard page
-const isDashboardPage = () => {
-  const dashboardPaths = [
-    '/admin-dashboard',
-    '/manager-dashboard', 
-    '/driver-dashboard',
-    '/dashboard/user',
-    '/dashboard/parent',
-    '/admin/users',
-    '/admin/buses',
-    '/admin/routes',
-    '/admin/reports',
-    '/admin/bookings',
-    '/admin/booking-reports',
-    '/admin/driver-reports',
-    '/attendance',
-    '/profile',
-    '/bookings',
-    '/booking',
-    '/notifications',
-    '/map-view',
-    '/reports',
-    '/settings',
-    '/help',
-    '/driver-profile',
-    '/parent-profile',
-    '/admin/trips'
-  ];
-  return dashboardPaths.some(path => location.pathname.startsWith(path));
-};
+  // Check if current path is a dashboard page
+  const isDashboardPage = () => {
+    const dashboardPaths = [
+      '/admin-dashboard',
+      '/manager-dashboard',
+      '/driver-dashboard',
+      '/dashboard/user',
+      '/dashboard/parent',
+      '/admin/users',
+      '/admin/buses',
+      '/admin/routes',
+      '/admin/reports',
+      '/admin/bookings',
+      '/admin/booking-reports',
+      '/admin/driver-reports',
+      '/attendance',
+      '/profile',
+      '/bookings',
+      '/booking',
+      '/notifications',
+      '/map-view',
+      '/reports',
+      '/settings',
+      '/help',
+      '/driver-profile',
+      '/parent-profile',
+      '/admin/trips'
+    ];
+    return dashboardPaths.some(path => location.pathname.startsWith(path));
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -1,6 +1,32 @@
-import { Link } from "react-router-dom"
+import { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { Link } from "react-router-dom";
+import { fetchProfile } from "../redux/userSlice";
+import Loading from "../components/Loading.jsx";
 
 const DriverProfile = () => {
+  const dispatch = useDispatch();
+  const { user, loading, error } = useSelector((state) => state.user);
+
+  useEffect(() => {
+    // Fetch profile only if user data is not available
+    if (!user) {
+      dispatch(fetchProfile());
+    }
+  }, [dispatch, user]);
+
+  if (loading) {
+    return <Loading />;
+  }
+
+  if (error) {
+    return <div className="text-center text-red-500 py-20">Error: {error}</div>;
+  }
+
+  if (!user) {
+    return <div className="text-center py-20">No driver data available.</div>;
+  }
+
   return (
     <div className="font-sans text-gray-800 bg-gray-50">
       {/* Main Content */}
@@ -11,12 +37,12 @@ const DriverProfile = () => {
             <div className="flex flex-col md:flex-row items-center">
               <div className="mb-6 md:mb-0 md:mr-8">
                 <div className="h-32 w-32 rounded-full bg-brand-beige text-brand-dark-blue flex items-center justify-center font-bold text-5xl">
-                  JD
+                  {user.firstName?.charAt(0).toUpperCase()}{user.lastName?.charAt(0).toUpperCase()}
                 </div>
               </div>
               <div className="text-center md:text-left">
-                <h1 className="text-3xl font-bold  mb-2">John Doe</h1>
-                <p className=" mb-4">Bus Driver - ID: DRV-2023-0042</p>
+                <h1 className="text-3xl font-bold  mb-2">{user.firstName} {user.lastName}</h1>
+                <p className=" mb-4">Bus Driver - ID: {user.licenseNumber || 'N/A'}</p>
                 <div className="flex flex-wrap justify-center md:justify-start gap-2">
                   <span className="px-3 py-1 bg-green-500 bg-opacity-20 text-green-300 rounded-full text-sm font-medium">
                     <i className="fas fa-check-circle mr-1"></i> Active
@@ -53,26 +79,24 @@ const DriverProfile = () => {
                   <div className="space-y-4">
                     <div>
                       <h3 className="text-sm font-medium text-gray-500">Full Name</h3>
-                      <p className="text-gray-800">John Michael Doe</p>
+                      <p className="text-gray-800">{user.firstName} {user.lastName}</p>
                     </div>
                     <div>
                       <h3 className="text-sm font-medium text-gray-500">Email Address</h3>
-                      <p className="text-gray-800">john.doe@example.com</p>
+                      <p className="text-gray-800">{user.email}</p>
                     </div>
                     <div>
                       <h3 className="text-sm font-medium text-gray-500">Phone Number</h3>
-                      <p className="text-gray-800">(555) 123-4567</p>
+                      <p className="text-gray-800">{user.phone || '(555) 123-4567'}</p>
                     </div>
                     <div>
                       <h3 className="text-sm font-medium text-gray-500">Date of Birth</h3>
-                      <p className="text-gray-800">May 15, 1985</p>
+                      <p className="text-gray-800">{user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : 'May 15, 1985'}</p>
                     </div>
                     <div>
                       <h3 className="text-sm font-medium text-gray-500">Address</h3>
                       <p className="text-gray-800">
-                        123 Driver Lane, Apt 4B
-                        <br />
-                        San Francisco, CA 94107
+                        {user.address || '123 Driver Lane, Apt 4B<br />San Francisco, CA 94107'}
                       </p>
                     </div>
                     <div>

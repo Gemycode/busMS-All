@@ -34,7 +34,7 @@ export const fetchTrackingHistory = createAsyncThunk(
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
       if (limit) params.append('limit', limit);
-      
+
       const response = await api.get(`/trackingRoutes/bus/${busId}/history?${params}`);
       return response.data;
     } catch (error) {
@@ -67,23 +67,23 @@ const trackingSlice = createSlice({
     updateBusLocation: (state, action) => {
       const { busId, location } = action.payload;
       const busIndex = state.buses.findIndex(bus => bus.bus.id === busId);
-      
+
       if (busIndex !== -1) {
         state.buses[busIndex].location = location;
       }
-      
+
       // Add to real-time updates
       state.realTimeUpdates.unshift({
         busId,
         location,
         timestamp: new Date().toISOString()
       });
-      
+
       // Keep only last 50 updates
       if (state.realTimeUpdates.length > 50) {
         state.realTimeUpdates = state.realTimeUpdates.slice(0, 50);
       }
-      
+
       state.lastUpdate = new Date().toISOString();
     },
     setSelectedBus: (state, action) => {

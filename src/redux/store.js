@@ -5,6 +5,8 @@ import attendanceReducer from './attendanceSlice';
 import busReducer from './busSlice';
 import routeReducer from './routeSlice';
 import tripsReducer from './tripsSlice';
+import driverReducer from './driverSlice';
+import bookingReducer from './bookingSlice';
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +16,8 @@ export const store = configureStore({
     buses: busReducer,
     routes: routeReducer,
     trips: tripsReducer,
+    driver: driverReducer,
+    bookings: bookingReducer,
   },
 });
 
