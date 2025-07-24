@@ -131,8 +131,7 @@ const LiveTrackingMap = ({ routeId = null, busId = null, userRole = "parent", bu
     signalStrength: bus.signalStrength || 100,
   })) : []
 
-  // ابحث عن أي استخدام لـ demoBuses واحذفه أو تجاهله
-  // في مكان mapBuses:
+  // ثم ضع شرط عدم وجود باصات هنا:
   if (!Array.isArray(mapBuses) || mapBuses.length === 0) {
     return <div style={{ textAlign: 'center', marginTop: '2rem', color: '#888' }}>لا توجد بيانات باصات متاحة حالياً</div>;
   }
@@ -175,6 +174,12 @@ const LiveTrackingMap = ({ routeId = null, busId = null, userRole = "parent", bu
       }
     });
   }, [buses, routes]);
+
+  // أضف طباعة للـ buses و mapBuses لمراقبة اختفاء الباصات
+  useEffect(() => {
+    console.log('🚌 buses:', buses);
+    console.log('🗺️ mapBuses:', mapBuses);
+  }, [buses, mapBuses]);
 
   if (isLoading && buses.length === 0) {
     return (

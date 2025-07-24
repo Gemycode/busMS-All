@@ -213,7 +213,11 @@ const AdminBuses = () => {
         onClose={() => setShowAddModal(false)}
         onSubmit={async (data) => {
           try {
-            await dispatch(createBus(data));
+            const result = await dispatch(createBus(data));
+            if (result.payload && result.type.endsWith('rejected')) {
+              showToast("error", result.payload);
+              return; // إبقاء المودال مفتوحًا عند الخطأ
+            }
             setShowAddModal(false);
             dispatch(fetchBuses());
             showToast("success", "Bus added successfully");
@@ -230,7 +234,11 @@ const AdminBuses = () => {
         onClose={() => { setShowEditModal(false); setEditingBus(null); }}
         onSubmit={async (data) => {
           try {
-            await dispatch(updateBus({ id: editingBus._id, busData: data }));
+            const result = await dispatch(updateBus({ id: editingBus._id, busData: data }));
+            if (result.payload && result.type.endsWith('rejected')) {
+              showToast("error", result.payload);
+              return; // إبقاء المودال مفتوحًا عند الخطأ
+            }
             setShowEditModal(false);
             setEditingBus(null);
             dispatch(fetchBuses());

@@ -147,17 +147,22 @@ const BookingPage = () => {
     setIsLoading(true);
     setToast({ show: false, type: 'success', message: '' });
     try {
+      // أضف طباعة للـ selectedTrip
+      console.log('selectedTrip:', selectedTrip);
       const studentIdToSend = user && user.role === 'parent' ? passengerData.studentId : /* منطق آخر للطالب */ '';
       const res = await api.post('/bookings/create', {
         tripId: selectedTrip._id,
         studentId: studentIdToSend,
+        busId: selectedTrip.busId?._id || selectedTrip.busId, // أرسل فقط ObjectId
+        routeId: selectedTrip.routeId?._id || selectedTrip.routeId, // أرسل فقط ObjectId
+        date: selectedTrip.date, // أرسل التاريخ إذا كان متوفر
         pickupLocation: {
-          name: passengerData.pickupAddress,
+          name: passengerData.pickupAddress || "N/A",
           lat: 0, // عدل لاحقًا حسب اختيار المستخدم
           long: 0
         },
         dropoffLocation: {
-          name: passengerData.dropoffAddress,
+          name: passengerData.dropoffAddress || "N/A",
           lat: 0, // عدل لاحقًا حسب اختيار المستخدم
           long: 0
         },
@@ -167,9 +172,13 @@ const BookingPage = () => {
       navigate('/booking-confirmation', {
         state: {
           bookingData: {
-            trip: selectedTrip,
-            passengerData,
-            ...res.data // أضف أي بيانات إضافية من الباك اند
+            ...selectedTrip,
+            ...res.data,
+            passengerData: {
+              ...passengerData,
+              // أضف خصائص الطالب من children إذا كانت متوفرة
+              ...(Array.isArray(children) ? (children.find(child => child._id === passengerData.studentId || child.id === passengerData.studentId) || {}) : {})
+            }
           }
         }
       });
@@ -346,15 +355,17 @@ const BookingPage = () => {
                 <p>No trips available for this route and date.</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  {trips.map(trip => (
-                    <div key={trip._id} className={`border rounded p-4 flex flex-col gap-2 ${selectedTrip && selectedTrip._id === trip._id ? 'border-brand-medium-blue' : ''}`}>
-                      <div><b>Time:</b> {new Date(trip.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                      <div><b>Bus:</b> {trip.busId?.BusNumber || 'N/A'}</div>
-                      <div><b>Driver:</b> {trip.driverId?.firstName} {trip.driverId?.lastName}</div>
-                      <div><b>Status:</b> {trip.status}</div>
-                      <button className="mt-2 px-4 py-2 bg-brand-medium-blue text-white rounded hover:bg-brand-dark-blue" onClick={() => { setSelectedTrip(trip); setStep(4); }}>Book This Trip</button>
-                    </div>
-                  ))}
+                  {trips
+                    .filter(trip => trip.busId) // عرض فقط الرحلات المرتبطة بباص
+                    .map(trip => (
+                      <div key={trip._id} className={`border rounded p-4 flex flex-col gap-2 ${selectedTrip && selectedTrip._id === trip._id ? 'border-brand-medium-blue' : ''}`}>
+                        <div><b>Time:</b> {new Date(trip.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                        <div><b>Bus:</b> {trip.busId?.BusNumber || 'N/A'}</div>
+                        <div><b>Driver:</b> {trip.driverId?.firstName} {trip.driverId?.lastName}</div>
+                        <div><b>Status:</b> {trip.status}</div>
+                        <button className="mt-2 px-4 py-2 bg-brand-medium-blue text-white rounded hover:bg-brand-dark-blue" onClick={() => { setSelectedTrip(trip); setStep(4); }}>Book This Trip</button>
+                      </div>
+                    ))}
                 </div>
               )}
               <div className="flex justify-between">

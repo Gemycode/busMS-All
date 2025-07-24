@@ -9,6 +9,11 @@ const BookingConfirmation = () => {
   const [bookingData, setBookingData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // استخدم بيانات الراكب من أي مصدر متوفر
+  const passenger = bookingData?.passengerData || bookingData?.studentId || {};
+  // استخدم بيانات الطريق من أي مصدر متوفر
+  const route = bookingData?.route || bookingData?.routeId || {};
+
   useEffect(() => {
     if (location.state?.bookingData) {
       setBookingData(location.state.bookingData);
@@ -18,6 +23,12 @@ const BookingConfirmation = () => {
       navigate('/booking');
     }
   }, [location.state, navigate]);
+
+  useEffect(() => {
+    if (bookingData) {
+      console.log('bookingData:', bookingData);
+    }
+  }, [bookingData]);
 
   const generateBookingId = () => {
     return 'BK' + Date.now().toString().slice(-8) + Math.random().toString(36).substr(2, 4).toUpperCase();
@@ -35,14 +46,14 @@ const BookingConfirmation = () => {
 BOOKING CONFIRMATION
 ===================
 Booking ID: ${ticketData.bookingId}
-Route: ${ticketData.route.name}
+Route: ${route.name || 'N/A'}
 Date: ${ticketData.date}
 Time: ${ticketData.time}
 Passengers: ${ticketData.passengerCount}
 Total Amount: $${ticketData.totalPrice}
-Passenger: ${ticketData.passengerData.firstName} ${ticketData.passengerData.lastName}
-Email: ${ticketData.passengerData.email}
-Phone: ${ticketData.passengerData.phone}
+Passenger: ${passenger.firstName || 'N/A'} ${passenger.lastName || 'N/A'}
+Email: ${passenger.email || 'N/A'}
+Phone: ${passenger.phone || 'N/A'}
     `;
     
     const blob = new Blob([ticketText], { type: 'text/plain' });
@@ -60,12 +71,12 @@ Phone: ${ticketData.passengerData.phone}
     if (navigator.share) {
       navigator.share({
         title: 'My Bus Booking',
-        text: `I've booked a trip on ${bookingData.route.name} for ${bookingData.date} at ${bookingData.time}`,
+        text: `I've booked a trip on ${route.name || 'N/A'} for ${bookingData.date} at ${bookingData.time}`,
         url: window.location.href
       });
     } else {
       // Fallback: copy to clipboard
-      navigator.clipboard.writeText(`Booking ID: ${generateBookingId()}\nRoute: ${bookingData.route.name}\nDate: ${bookingData.date}\nTime: ${bookingData.time}`);
+      navigator.clipboard.writeText(`Booking ID: ${generateBookingId()}\nRoute: ${route.name || 'N/A'}\nDate: ${bookingData.date}\nTime: ${bookingData.time}`);
       alert('Booking details copied to clipboard!');
     }
   };
@@ -137,19 +148,19 @@ Phone: ${ticketData.passengerData.phone}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-600">Route:</p>
-                    <p className="font-medium">{bookingData.route.name}</p>
+                    <p className="font-medium">{route.name || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-gray-600">Duration:</p>
-                    <p className="font-medium">{bookingData.route.duration}</p>
+                    <p className="font-medium">{route.duration || route.estimated_time || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-gray-600">From:</p>
-                    <p className="font-medium">{bookingData.route.startLocation}</p>
+                    <p className="font-medium">{route.startLocation || route.start_point?.name || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-gray-600">To:</p>
-                    <p className="font-medium">{bookingData.route.endLocation}</p>
+                    <p className="font-medium">{route.endLocation || route.end_point?.name || 'N/A'}</p>
                   </div>
                 </div>
               </div>
@@ -188,25 +199,25 @@ Phone: ${ticketData.passengerData.phone}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-600">Name:</p>
-                    <p className="font-medium">{bookingData.passengerData.firstName} {bookingData.passengerData.lastName}</p>
+                    <p className="font-medium">{passenger.firstName || 'N/A'} {passenger.lastName || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-gray-600">Email:</p>
-                    <p className="font-medium">{bookingData.passengerData.email}</p>
+                    <p className="font-medium">{passenger.email || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-gray-600">Phone:</p>
-                    <p className="font-medium">{bookingData.passengerData.phone}</p>
+                    <p className="font-medium">{passenger.phone || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-gray-600">Age:</p>
-                    <p className="font-medium">{bookingData.passengerData.age || 'Not specified'}</p>
+                    <p className="font-medium">{passenger.age || 'N/A'}</p>
                   </div>
                 </div>
-                {bookingData.passengerData.pickupAddress && (
+                {passenger.pickupAddress && (
                   <div className="mt-2">
                     <p className="text-gray-600 text-sm">Pickup Address:</p>
-                    <p className="font-medium text-sm">{bookingData.passengerData.pickupAddress}</p>
+                    <p className="font-medium text-sm">{passenger.pickupAddress}</p>
                   </div>
                 )}
               </div>
@@ -217,7 +228,7 @@ Phone: ${ticketData.passengerData.phone}
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Route:</span>
-                    <span>{bookingData.route.name}</span>
+                    <span>{route.name || 'N/A'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Passengers:</span>
