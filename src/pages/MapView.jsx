@@ -213,6 +213,10 @@ const MapView = () => {
               <div className="text-center py-16 text-gray-500">جاري تحميل بيانات الخريطة...</div>
             ) : error ? (
               <div className="text-center py-16 text-red-500">{error}</div>
+            ) : isParentOrStudent && !busIdProp ? (
+              <div className="text-center py-16 text-gray-500">
+                يرجى اختيار باص لعرض التتبع الحي.
+              </div>
             ) : (
               <LiveTrackingMap
                 routeId={routeIdProp}

@@ -1244,7 +1244,7 @@ const AdminDashboard = () => {
                     <option value="">Select a route (optional)</option>
                     {(Array.isArray(routes) ? routes : []).map(route => (
                       <option key={route._id} value={route._id}>
-                        {route.name} - {route.start_point} to {route.end_point}
+                        {route.name} - {route.start_point.name|| '-'} to {route.end_point.name|| '-'}
                       </option>
                     ))}
                   </select>
