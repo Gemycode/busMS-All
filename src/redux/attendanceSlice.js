@@ -83,7 +83,8 @@ export const fetchUserAttendance = createAsyncThunk(
         if (filters[key]) queryParams.append(key, filters[key]);
       });
 
-      const res = await api.get(`/attendances/user/${userId}?${queryParams}`);
+      queryParams.append('userId', userId);
+      const res = await api.get(`/attendances?${queryParams}`);
       return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || 'Failed to fetch user attendance');

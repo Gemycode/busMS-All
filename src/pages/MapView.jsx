@@ -4,7 +4,9 @@ import { useState, useEffect } from "react"
 import { Link, useLocation } from "react-router-dom"
 import LiveTrackingMap from "../components/LiveTrackingMap"
 import TrackingTestPanel from "../components/TrackingTestPanel"
-import axios from "axios"
+import { useDispatch, useSelector } from "react-redux"
+import { fetchActiveBuses } from "../redux/trackingSlice"
+import { fetchRoutes } from "../redux/routesSlice"
 
 const MapView = () => {
   const [viewMode, setViewMode] = useState("all") // all, route, bus
@@ -14,39 +16,22 @@ const MapView = () => {
   const [showTestPanel, setShowTestPanel] = useState(false)
 
   // --- جديد: حالة الدور والبيانات ---
-  const [role, setRole] = useState("")
-  const [userId, setUserId] = useState("")
-  const [buses, setBuses] = useState([])
-  const [routes, setRoutes] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
 
-  // جلب بيانات المستخدم من localStorage (يمكنك تعديله حسب نظامك)
-  useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem("user")) || {};
-    setRole(userData.role || "")
-    setUserId(userData.id || userData._id || "")
-  }, [])
+  const dispatch = useDispatch();
+  const { user } = useSelector(state => state.user);
+  const { buses, loading: busesLoading, error: busesError } = useSelector(state => state.tracking);
+  const { routes, loading: routesLoading, error: routesError } = useSelector(state => state.routes);
 
-  // جلب بيانات الباصات والمسارات حسب الدور
+  const loading = busesLoading || routesLoading;
+  const error = busesError || routesError;
+
   useEffect(() => {
-    if (!role || !userId) return;
-    setLoading(true)
-    axios.get(`/api/dashboard/map-data?role=${role}&userId=${userId}`)
-      .then(res => {
-        setBuses(res.data.buses || [])
-        setRoutes(res.data.routes || [])
-        setLoading(false)
-        console.log('🚦 routes from API:', res.data.routes);
-      })
-      .catch(err => {
-        setError("فشل في جلب بيانات الخريطة")
-        setLoading(false)
-      })
-  }, [role, userId])
+    dispatch(fetchActiveBuses());
+    dispatch(fetchRoutes());
+  }, [dispatch]);
 
   // منطق اختيار الباص للـ parent/student
-  const isParentOrStudent = role === "parent" || role === "student"
+  const isParentOrStudent = user?.role === "parent" || user?.role === "student"
   const busesForSelect = buses.map(bus => ({ id: bus._id || bus.id, name: bus.BusNumber || bus.number }))
   const hasSingleBus = isParentOrStudent && busesForSelect.length === 1
   const hasMultipleBuses = isParentOrStudent && busesForSelect.length > 1
@@ -63,7 +48,7 @@ const MapView = () => {
     if (!isParentOrStudent) {
       setSelectedBus("")
     }
-  }, [role, buses])
+  }, [user?.role, buses])
 
   // Read busId and routeId from query params for deep linking from notifications
   const location = useLocation();
@@ -232,7 +217,7 @@ const MapView = () => {
               <LiveTrackingMap
                 routeId={routeIdProp}
                 busId={busIdProp}
-                userRole={role}
+                userRole={user?.role}
                 buses={busesToShow}
                 routes={routesToShow}
               />

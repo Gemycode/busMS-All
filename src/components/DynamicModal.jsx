@@ -89,11 +89,11 @@ const DynamicModal = ({ isOpen, onClose, onSubmit, schema, title, initialData, c
                     {field.options.map((option) =>
                       typeof option === "object"
                         ? (
-                            <option key={option.value} value={option.value}>{option.label}</option>
-                          )
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        )
                         : (
-                      <option key={option} value={option}>{option}</option>
-                          )
+                          <option key={option} value={option}>{option}</option>
+                        )
                     )}
                   </select>
                 </div>

@@ -10,7 +10,8 @@ import { fetchRoutes, createRoute, updateRoute, deleteRoute, clearRouteMessage }
 import { fetchAllUsers, registerUser, updateUser, deleteUser } from "../redux/userSlice"
 import { createTrip, fetchTrips } from "../redux/tripsSlice"
 import dayjs from "dayjs"
-import { fetchAttendanceStats } from "../redux/attendanceSlice"
+import { fetchAttendanceStats } from "../redux/attendanceSlice";
+import TripsList from '../components/TripsList';
 import AdvancedLeafletMap from "../components/AdvancedLeafletMap";
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
@@ -29,7 +30,7 @@ const AdminDashboard = () => {
   const { buses, loading: busesLoading, error: busesError, message: busMsg } = useSelector((state) => state.buses || {});
   const { routes, loading: routesLoading, error: routesError, message: routeMsg } = useSelector((state) => state.routes || {});
   const { allUsers, loading: usersLoading } = useSelector((state) => state.user);
-  
+
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeBuses: 0,
@@ -309,7 +310,7 @@ const AdminDashboard = () => {
     // Generate dynamic recent activity based on actual data
     const generateRecentActivity = () => {
       const activities = [];
-      
+
       // Add user activities
       if ((Array.isArray(allUsers) ? allUsers : []).length > 0) {
         const recentUsers = (Array.isArray(allUsers) ? allUsers : []).slice(0, 2);
@@ -324,7 +325,7 @@ const AdminDashboard = () => {
           });
         });
       }
-      
+
       // Add bus activities
       if ((Array.isArray(buses) ? buses : []).length > 0) {
         const recentBuses = (Array.isArray(buses) ? buses : []).slice(0, 2);
@@ -339,7 +340,7 @@ const AdminDashboard = () => {
           });
         });
       }
-      
+
       // Add route activities
       if ((Array.isArray(routes) ? routes : []).length > 0) {
         const recentRoutes = (Array.isArray(routes) ? routes : []).slice(0, 2);
@@ -354,7 +355,7 @@ const AdminDashboard = () => {
           });
         });
       }
-      
+
       // Add system health activities
       activities.push({
         id: "system_health",
@@ -364,10 +365,10 @@ const AdminDashboard = () => {
         icon: "fa-heartbeat",
         color: "text-green-600",
       });
-      
+
       return activities.slice(0, 5); // Limit to 5 activities
     };
-    
+
     setRecentActivity(generateRecentActivity());
   }, [dispatch])
 
@@ -375,7 +376,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     const generateRecentActivity = () => {
       const activities = [];
-      
+
       // Add user activities
       if ((Array.isArray(allUsers) ? allUsers : []).length > 0) {
         const recentUsers = (Array.isArray(allUsers) ? allUsers : []).slice(0, 2);
@@ -390,7 +391,7 @@ const AdminDashboard = () => {
           });
         });
       }
-      
+
       // Add bus activities
       if ((Array.isArray(buses) ? buses : []).length > 0) {
         const recentBuses = (Array.isArray(buses) ? buses : []).slice(0, 2);
@@ -405,7 +406,7 @@ const AdminDashboard = () => {
           });
         });
       }
-      
+
       // Add route activities
       if ((Array.isArray(routes) ? routes : []).length > 0) {
         const recentRoutes = (Array.isArray(routes) ? routes : []).slice(0, 2);
@@ -420,7 +421,7 @@ const AdminDashboard = () => {
           });
         });
       }
-      
+
       // Add system health activities
       activities.push({
         id: "system_health",
@@ -430,10 +431,10 @@ const AdminDashboard = () => {
         icon: "fa-heartbeat",
         color: "text-green-600",
       });
-      
+
       return activities.slice(0, 5); // Limit to 5 activities
     };
-    
+
     setRecentActivity(generateRecentActivity());
   }, [allUsers, buses, routes, stats.totalUsers, stats.activeBuses])
 
@@ -454,11 +455,11 @@ const AdminDashboard = () => {
   const labelsTrend = [new Date().toLocaleDateString()];
 
   const attendanceTrend = [attendanceRateTrend];
-  const studentsTrend   = [totalStudentsTrend];
-  const busesTrend      = [totalBusesTrend];
-  const routesTrend     = [totalRoutesTrend];
-  const parentsTrend    = [totalParentsTrend];
-  const driversTrend    = [totalDriversTrend];
+  const studentsTrend = [totalStudentsTrend];
+  const busesTrend = [totalBusesTrend];
+  const routesTrend = [totalRoutesTrend];
+  const parentsTrend = [totalParentsTrend];
+  const driversTrend = [totalDriversTrend];
 
   const lineDataTrend = {
     labels,
@@ -725,6 +726,11 @@ const AdminDashboard = () => {
               </div>
             </div>
 
+            {/* All Trips List */}
+            <div className="bg-white rounded-lg shadow-md p-6 my-8">
+              <TripsList />
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* System Overview */}
               <div className="lg:col-span-2">
@@ -801,68 +807,68 @@ const AdminDashboard = () => {
                       <div>Loading...</div>
                     ) : (Array.isArray(allUsers) ? allUsers : []).length > 0 ? (
                       <>
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            User
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Role
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Last Active
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                User
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Role
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Last Active
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
                             {(Array.isArray(allUsers) ? allUsers : []).slice(0, 5).map((user) => (
                               <tr key={user._id}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="h-8 w-8 rounded-full bg-brand-beige flex items-center justify-center mr-3">
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center">
+                                    <div className="h-8 w-8 rounded-full bg-brand-beige flex items-center justify-center mr-3">
                                       <span className="text-sm font-medium text-brand-dark-blue">
                                         {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
                                       </span>
-                              </div>
-                              <div>
+                                    </div>
+                                    <div>
                                       <div className="text-sm font-medium text-gray-900">{user.firstName} {user.lastName}</div>
                                       <div className="text-sm text-gray-500">{user.email}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
                                     {user.role}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                              Active
-                            </span>
-                          </td>
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                                    Active
+                                  </span>
+                                </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                   {user.updatedAt ? new Date(user.updatedAt).toLocaleDateString() : '-'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                   <button className="text-brand-medium-blue hover:text-brand-dark-blue mr-3" onClick={() => { setEditingUser(user); setShowEditUserModal(true); }}>Edit</button>
                                   <button className="text-red-600 hover:text-red-900" onClick={async () => {
-                                    if(window.confirm('هل أنت متأكد أنك تريد حذف هذا المستخدم؟')) {
+                                    if (window.confirm('هل أنت متأكد أنك تريد حذف هذا المستخدم؟')) {
                                       await dispatch(deleteUser(user._id));
                                       dispatch(fetchAllUsers());
                                     }
                                   }}>Delete</button>
-                          </td>
-                        </tr>
+                                </td>
+                              </tr>
                             ))}
-                      </tbody>
-                    </table>
+                          </tbody>
+                        </table>
                       </>
                     ) : (
                       <div>No users found.</div>
@@ -911,14 +917,14 @@ const AdminDashboard = () => {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <button className="text-brand-medium-blue hover:text-brand-dark-blue mr-3" onClick={() => { setEditingBus(bus); setShowEditBusModal(true); }}>Edit</button>
-                                <button className="text-red-600 hover:text-red-900" onClick={async () => { 
-                                  if (window.confirm('Are you sure you want to delete this bus?')) { 
+                                <button className="text-red-600 hover:text-red-900" onClick={async () => {
+                                  if (window.confirm('Are you sure you want to delete this bus?')) {
                                     try {
                                       await dispatch(deleteBus(bus._id));
                                     } catch (err) {
                                       console.error("Bus deletion error:", err);
                                     }
-                                  } 
+                                  }
                                 }}>Delete</button>
                               </td>
                             </tr>
@@ -962,14 +968,14 @@ const AdminDashboard = () => {
                               <td className="px-6 py-4 whitespace-nowrap">{route.estimated_time}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <button className="text-brand-medium-blue hover:text-brand-dark-blue mr-3" onClick={() => { setEditingRoute(route); setShowEditRouteModal(true); }}>Edit</button>
-                                <button className="text-red-600 hover:text-red-900" onClick={async () => { 
-                                  if (window.confirm('Are you sure you want to delete this route?')) { 
+                                <button className="text-red-600 hover:text-red-900" onClick={async () => {
+                                  if (window.confirm('Are you sure you want to delete this route?')) {
                                     try {
                                       await dispatch(deleteRoute(route._id));
                                     } catch (err) {
                                       console.error("Route deletion error:", err);
                                     }
-                                  } 
+                                  }
                                 }}>Delete</button>
                               </td>
                             </tr>
@@ -1119,7 +1125,7 @@ const AdminDashboard = () => {
         schema={userSchema}
         title="Add New User"
       />
-      
+
       {/* Custom Bus Modal with Dropdowns */}
       {showBusModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1133,7 +1139,7 @@ const AdminDashboard = () => {
                 <i className="fas fa-times"></i>
               </button>
             </div>
-            
+
             <form onSubmit={async (e) => {
               e.preventDefault();
               try {
@@ -1176,7 +1182,7 @@ const AdminDashboard = () => {
                     placeholder="Enter bus number"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Capacity *
@@ -1191,7 +1197,7 @@ const AdminDashboard = () => {
                     placeholder="Enter capacity"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Status *
@@ -1207,7 +1213,7 @@ const AdminDashboard = () => {
                     <option value="inactive">Inactive</option>
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Assigned Driver
@@ -1225,7 +1231,7 @@ const AdminDashboard = () => {
                     ))}
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Assigned Route
@@ -1244,7 +1250,7 @@ const AdminDashboard = () => {
                   </select>
                 </div>
               </div>
-              
+
               <div className="flex justify-end space-x-3 mt-6">
                 <button
                   type="button"
@@ -1264,7 +1270,7 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
-      
+
       {/* Create Route Modal */}
       <DynamicModal
         isOpen={showRouteModal}
@@ -1350,7 +1356,7 @@ const AdminDashboard = () => {
           <DynamicModal
             isOpen={showStartMapModal || showEndMapModal}
             onClose={() => { setShowStartMapModal(false); setShowEndMapModal(false); setTempLatLng(null); setPointName(""); }}
-            onSubmit={() => {}} // دالة فارغة تمنع الخطأ
+            onSubmit={() => { }} // دالة فارغة تمنع الخطأ
             title={pointType === 'start' ? "اختر نقطة البداية على الخريطة" : "اختر نقطة النهاية على الخريطة"}
             schema={{}}
           >
@@ -1408,7 +1414,7 @@ const AdminDashboard = () => {
         )}
         {/* مودال إضافة محطة */}
         {showMapModal && (
-          <DynamicModal isOpen={showMapModal} onClose={() => setShowMapModal(false)} onSubmit={() => {}} title="اختر موقع المحطة على الخريطة" schema={{}}>
+          <DynamicModal isOpen={showMapModal} onClose={() => setShowMapModal(false)} onSubmit={() => { }} title="اختر موقع المحطة على الخريطة" schema={{}}>
             <AdvancedLeafletMap
               height="400px"
               showControls={false}
@@ -1438,7 +1444,7 @@ const AdminDashboard = () => {
                       setTempLatLng(null);
                       setPointName("");
                     }}
-                    // يمكن حفظ النقطة حتى لو الاسم فارغ (لـ Waypoint)
+                  // يمكن حفظ النقطة حتى لو الاسم فارغ (لـ Waypoint)
                   >
                     حفظ النقطة
                   </button>
@@ -1540,8 +1546,8 @@ const AdminDashboard = () => {
           }
         }}
       />
-      {routeMsg && <div className="text-center text-sm mt-2 mb-4 font-bold" style={{color: routeMsg.includes('success') ? '#16a34a' : '#dc2626'}}>{routeMsg}</div>}
-      {busMsg && <div className="text-center text-sm mt-2 mb-4 font-bold" style={{color: busMsg.includes('success') ? '#16a34a' : '#dc2626'}}>{busMsg}</div>}
+      {routeMsg && <div className="text-center text-sm mt-2 mb-4 font-bold" style={{ color: routeMsg.includes('success') ? '#16a34a' : '#dc2626' }}>{routeMsg}</div>}
+      {busMsg && <div className="text-center text-sm mt-2 mb-4 font-bold" style={{ color: busMsg.includes('success') ? '#16a34a' : '#dc2626' }}>{busMsg}</div>}
     </div>
   )
 }
