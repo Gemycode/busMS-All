@@ -347,7 +347,7 @@ const Settings = () => {
 
   return (
     <div className="font-sans text-gray-800 bg-gray-50 min-h-screen">
-      <main className="pt-20">
+      <main className="pt-0">
         {/* Header */}
         <section className="bg-gradient-to-r from-brand-dark-blue to-brand-medium-blue py-8">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">

@@ -179,7 +179,9 @@ const LiveTrackingMap = ({ routeId = null, busId = null, userRole = "parent", bu
   useEffect(() => {
     console.log('🚌 buses:', buses);
     console.log('🗺️ mapBuses:', mapBuses);
-  }, [buses, mapBuses]);
+    console.log('filteredBuses:', filteredBuses);
+    console.log('routes (for map):', routes);
+  }, [buses, mapBuses, filteredBuses, routes]);
 
   if (isLoading && buses.length === 0) {
     return (
@@ -252,6 +254,7 @@ const LiveTrackingMap = ({ routeId = null, busId = null, userRole = "parent", bu
         onBusClick={handleBusClick}
         buses={mapBuses}
         routes={routes}
+        userRole={userRole}
       />
 
       {/* Bus Status Panel */}

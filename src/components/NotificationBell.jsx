@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import Toast from './Toast';
 
 const NotificationBell = () => {
   const [notifications, setNotifications] = useState([]);
@@ -9,51 +11,58 @@ const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const [showToast, setShowToast] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+  const lastNotifId = useRef(null);
 
-  // Dummy notifications data
-  const dummyNotifications = [
-    {
-      id: 1,
-      title: "Bus Arrival",
-      message: "Your bus will arrive in 5 minutes",
-      type: "arrival",
-      time: "2 min ago",
-      isRead: false,
-      route: "Route A - School Zone"
-    },
-    {
-      id: 2,
-      title: "Booking Confirmed",
-      message: "Your booking for tomorrow has been confirmed",
-      type: "booking",
-      time: "10 min ago",
-      isRead: false,
-      route: "Route B - Residential Area"
-    },
-    {
-      id: 3,
-      title: "Route Update",
-      message: "Route C schedule has been updated",
-      type: "update",
-      time: "1 hour ago",
-      isRead: true,
-      route: "Route C - Express Line"
-    },
-    {
-      id: 4,
-      title: "Maintenance Alert",
-      message: "Bus maintenance scheduled for Friday",
-      type: "maintenance",
-      time: "2 hours ago",
-      isRead: true,
-      route: "All Routes"
-    }
-  ];
-
+  // Polling + Toast for new notifications
   useEffect(() => {
-    setNotifications(dummyNotifications);
-    setUnreadCount(dummyNotifications.filter(n => !n.isRead).length);
+    let isMounted = true;
+    const fetchNotifications = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get('/api/notifications', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const notifs = res.data;
+        if (!Array.isArray(notifs)) return;
+        // Toast logic: إذا فيه إشعار جديد
+        if (isMounted && notifs.length > 0) {
+          const latestId = notifs[0]._id || notifs[0].id;
+          if (lastNotifId.current && latestId !== lastNotifId.current) {
+            setToastMsg(notifs[0].title || notifs[0].body || 'New notification');
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+          }
+          lastNotifId.current = latestId;
+        }
+        setNotifications(notifs);
+        const unread = notifs.filter(n => n.isRead === false || n.isRead === undefined).length;
+        setUnreadCount(unread);
+      } catch (err) {
+        setNotifications([]);
+        setUnreadCount(0);
+      }
+    };
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 60000); // كل دقيقة
+    return () => { isMounted = false; clearInterval(interval); };
   }, []);
+
+  // WebSocket/Realtime notifications (اختياري)
+  // يمكنك تفعيل الكود التالي إذا كان الباك اند يدعم WebSocket أو Socket.io
+  // useEffect(() => {
+  //   const socket = new WebSocket('ws://localhost:5000');
+  //   socket.onmessage = (event) => {
+  //     const notif = JSON.parse(event.data);
+  //     setNotifications(prev => [notif, ...prev]);
+  //     setUnreadCount(prev => prev + 1);
+  //     setToastMsg(notif.title || notif.body || 'New notification');
+  //     setShowToast(true);
+  //     setTimeout(() => setShowToast(false), 3000);
+  //   };
+  //   return () => socket.close();
+  // }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -68,17 +77,18 @@ const NotificationBell = () => {
     };
   }, []);
 
+  // Mark as read locally (UI only)
   const markAsRead = (notificationId) => {
-    setNotifications(prev => 
-      prev.map(n => 
-        n.id === notificationId ? { ...n, isRead: true } : n
+    setNotifications(prev =>
+      prev.map(n =>
+        (n._id === notificationId || n.id === notificationId) ? { ...n, isRead: true } : n
       )
     );
     setUnreadCount(prev => Math.max(0, prev - 1));
   };
 
   const markAllAsRead = () => {
-    setNotifications(prev => 
+    setNotifications(prev =>
       prev.map(n => ({ ...n, isRead: true }))
     );
     setUnreadCount(0);
@@ -116,7 +126,7 @@ const NotificationBell = () => {
 
   // Handle notification click: mark as read and redirect to map-view with busId/routeId if present
   const handleNotificationClick = (notification) => {
-    markAsRead(notification.id);
+    markAsRead(notification._id || notification.id);
     if (notification.busId) {
       navigate(`/map-view?busId=${notification.busId}`);
     } else if (notification.routeId) {
@@ -126,6 +136,8 @@ const NotificationBell = () => {
 
   return (
     <div className="relative" ref={dropdownRef}>
+      {/* Toast for new notification */}
+      {showToast && <Toast message={toastMsg} type="info" />}
       {/* Notification Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -175,7 +187,7 @@ const NotificationBell = () => {
               <div className="divide-y divide-gray-100">
                 {notifications.slice(0, 5).map((notification) => (
                   <div
-                    key={notification.id}
+                    key={notification._id || notification.id}
                     className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
                       !notification.isRead ? 'bg-blue-50' : ''
                     }`}
@@ -188,7 +200,7 @@ const NotificationBell = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-medium text-gray-900">
-                            {notification.title}
+                            {notification.title || notification.body || 'Notification'}
                           </p>
                           <div className="flex items-center space-x-2">
                             {!notification.isRead && (
@@ -200,11 +212,11 @@ const NotificationBell = () => {
                           </div>
                         </div>
                         <p className="text-sm text-gray-600 mt-1">
-                          {notification.message}
+                          {notification.message || notification.body}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
                           <i className="fas fa-route mr-1"></i>
-                          {notification.route}
+                          {notification.route || ''}
                         </p>
                       </div>
                     </div>

@@ -1,0 +1,155 @@
+Project Overview
+===============
+Bus Management System is a web application designed to manage school/company bus operations. It supports multiple user roles (Admin, Manager, Driver, Parent, Student) and provides features such as bus and route management, trip scheduling, seat booking, live tracking, attendance, notifications, and reporting. The system aims to streamline daily transportation, improve safety, and provide real-time information to all stakeholders.
+
+Sitemap
+=======
+Visual Tree (grouped by role):
+
+/
+├── Home
+├── About
+├── Features
+├── Contact
+├── Login (All)
+├── Register Parent (Parent)
+├── Login Driver (Driver)
+├── Login Admin (Admin/Manager)
+├── Booking Confirmation (Student/Parent)
+├── Map View (All Authenticated)
+├── Notifications (All Authenticated)
+├── Reports (All Authenticated)
+├── Settings (All Authenticated)
+├── Help (All Authenticated)
+├── Profile (All Authenticated)
+│
+├── Admin
+│   ├── /admin-dashboard
+│   ├── /admin/users
+│   ├── /admin/buses
+│   ├── /admin/routes
+│   ├── /admin/reports
+│   ├── /admin/bookings
+│   ├── /admin/booking-reports
+│   ├── /admin/driver-reports
+│   ├── /admin/trips
+│
+├── Manager
+│   ├── /manager-dashboard
+│
+├── Driver
+│   ├── /driver-dashboard
+│   ├── /driver-profile
+│
+├── Parent
+│   ├── /dashboard/parent
+│   ├── /parent-profile
+│
+├── Student
+│   ├── /dashboard/user
+│
+├── Shared (Student/Parent)
+│   ├── /booking
+│   ├── /bookings
+
+Roles & Permissions
+===================
+| Role     | Accessible Pages/Features                                                                                  |
+|----------|-----------------------------------------------------------------------------------------------------------|
+| Admin    | All admin/manager pages, CRUD for users/buses/routes/trips, reports, attendance, notifications, settings  |
+| Manager  | Most admin features, limited user management, reports, attendance, notifications, settings                |
+| Driver   | Driver dashboard, assigned trips, tracking, attendance, notifications, profile                            |
+| Parent   | Parent dashboard, children management, booking, tracking, notifications, profile                          |
+| Student  | Student dashboard, booking, tracking, notifications, profile                                              |
+| All      | Home, About, Features, Contact, Login, Help                                                               |
+
+- Role-based rendering/authentication: Yes, via <RouteGuard allowedRoles=[...]> in routing.
+
+Feature Breakdown
+=================
+| Feature Name         | Page/Route               | Purpose                                 | Status      | Notes/Improvements                                 |
+|----------------------|--------------------------|-----------------------------------------|-------------|----------------------------------------------------|
+| Login/Auth           | /login, /login-admin     | User authentication                     | Working     | Basic validation, can improve error feedback       |
+| Register Parent      | /register-parent         | Parent registration                     | Working     | Only for parents                                   |
+| Dashboard (Admin)    | /admin-dashboard         | Admin overview, stats                   | Working     | Complex, mostly functional                         |
+| Dashboard (Manager)  | /manager-dashboard       | Manager overview                        | Working     | Similar to admin                                   |
+| Dashboard (Driver)   | /driver-dashboard        | Driver trips, attendance                | Working     | Needs more trip/attendance actions                 |
+| Dashboard (Parent)   | /dashboard/parent        | Parent children, bookings, tracking     | Working     | Could add more child-specific tracking             |
+| Dashboard (Student)  | /dashboard/user          | Student info, booking, tracking         | Partial     | Needs attendance, more student features            |
+| Bus Management       | /admin/buses             | CRUD for buses                          | Working     | Validation improved, error handling added          |
+| Route Management     | /admin/routes            | CRUD for routes                         | Working     |                                                    |
+| Trip Management      | /admin/trips             | CRUD for trips                          | Working     |                                                    |
+| User Management      | /admin/users             | CRUD for users                          | Working     |                                                    |
+| Booking              | /booking                 | Book seat/trip                          | Working     | Validation improved                                |
+| Bookings List        | /bookings                | View bookings                           | Working     |                                                    |
+| Booking Confirmation | /booking-confirmation    | Show booking details                    | Working     |                                                    |
+| Notifications        | /notifications           | View notifications                      | Working     | Needs real-time/push notifications                 |
+| Live Tracking        | /map-view                | Real-time bus tracking                  | Working     | Needs per-role filtering, better UX for parents    |
+| Attendance           | /attendance              | Attendance management                   | Working     | Needs student/parent view                          |
+| Reports              | /reports, /admin/reports | System and booking reports              | Working     |                                                    |
+| Settings             | /settings                | User settings                           | Working     |                                                    |
+| Help                 | /help                    | Help/FAQ                                | Working     |                                                    |
+| Profile              | /profile                 | Edit profile                            | Working     |                                                    |
+
+System Flow
+===========
+Typical User Journey:
+1. Login/Register
+2. Redirect to Dashboard (based on role)
+3. For Student/Parent: View dashboard → Book trip → See confirmation → View bookings → Track bus (map-view) → Get notifications
+4. For Driver: Login → View dashboard → See assigned trips → Mark attendance → Track bus
+5. For Admin/Manager: Login → Dashboard → Manage users/buses/routes/trips → View reports → Settings
+
+Missing Features / Problems
+===========================
+- Student: No attendance or presence report view. No direct notification for bus arrival/departure. No direct link between student and their assigned bus in tracking.
+- Parent: No real-time notification when child boards/exits bus. No direct per-child tracking from dashboard.
+- Driver: No clear UI for marking attendance or starting/ending trips. No notification system for trip changes.
+- Admin/Manager: No granular permissions (e.g., restrict some managers). No export/archive for reports. No support/ticketing system.
+- General: No push/email/SMS notifications. No payment integration (if needed). No advanced analytics or dashboard widgets. No error boundaries or fallback UIs for failed API calls.
+
+Recommendations
+===============
+- UX: Add attendance and presence reports for students/parents. Add real-time notifications (push/email/SMS) for parents/students/drivers. Improve tracking UX: direct link from dashboard to assigned bus, per-child tracking for parents. Add error boundaries and user-friendly error messages. Add loading states and skeletons for all data-fetching pages. Add role-based dashboards with quick actions.
+- Code Structure: Centralize route definitions and permissions in a config file. Use a global error handler for API calls. Refactor repeated logic in modals/forms into reusable hooks/components. Add more unit/integration tests for critical flows.
+
+API or Backend Integration
+=========================
+Sample of detected endpoints (from api_endpoints_reference.txt and code):
+| Endpoint                  | Method | Purpose                                 |
+|---------------------------|--------|-----------------------------------------|
+| /api/users/register       | POST   | Register new user                       |
+| /api/users/login          | POST   | User login                              |
+| /api/buses/all            | GET    | Get all buses                           |
+| /api/buses/create         | POST   | Create new bus                          |
+| /api/buses/update/:id     | PUT    | Update bus                              |
+| /api/buses/delete/:id     | DELETE | Delete bus                              |
+| /api/routes/              | GET    | Get all routes                          |
+| /api/routes/create        | POST   | Create new route                        |
+| /api/routes/update/:id    | PUT    | Update route                            |
+| /api/routes/delete/:id    | DELETE | Delete route                            |
+| /api/trips/               | GET    | Get all trips                           |
+| /api/trips/create         | POST   | Create new trip                         |
+| /api/bookings/create      | POST   | Create new booking                      |
+| /api/bookings/parent      | GET    | Get parent bookings                     |
+| /api/bookings/status/:id  | PUT    | Update booking status                   |
+| /api/notifications/       | GET    | Get notifications                       |
+| /api/attendance/          | GET    | Get attendance stats                    |
+| /api/bus-locations/       | GET    | Get live bus locations                  |
+
+Note: All endpoints are protected by role-based middleware. Most CRUD operations are available for admin/manager roles.
+
+Visual Sitemap (Description)
+============================
+- Admin/Manager: Access all management, reporting, and CRUD pages via a sidebar/dashboard.
+- Driver: Dashboard with assigned trips, attendance, and tracking.
+- Parent: Dashboard with children, bookings, and tracking. Can book for children.
+- Student: Dashboard with bookings, booking flow, and tracking.
+- All Authenticated: Access to notifications, map-view, reports, settings, help, and profile.
+
+Summary
+=======
+The system is robust and covers most core bus management needs, but to be a truly full-featured solution:
+- Add real-time notifications, attendance/presence reporting for students/parents, and more granular role management.
+- Improve UX for tracking and error handling.
+- Consider advanced analytics, export, and support features for admins. 

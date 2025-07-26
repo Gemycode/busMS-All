@@ -256,12 +256,18 @@ a.btn:active {
   bottom: 10px;
 }
 
+.animated-bus.bus-1 { animation-delay: 0s; }
+.animated-bus.bus-2 { animation-delay: 3s; }
+.animated-bus.bus-3 { animation-delay: 6s; }
+.animated-bus.bus-4 { animation-delay: 9s; }
+.animated-bus { margin-right: 60px; }
+
 @keyframes busDriveAcross {
   0% {
     transform: translateX(-50px);
   }
   100% {
-    transform: translateX(calc(100% + 500px));
+    transform: translateX(100vw);
   }
 }
 

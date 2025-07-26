@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import AnimatedBus from "../components/AnimatedBus"
 import Toast from "../components/Toast"
+import heroVideo from '../assets/3405803-uhd_3840_2160_30fps.mp4';
 
 const Home = () => {
   const [showToast, setShowToast] = useState(false)
@@ -23,8 +24,21 @@ const Home = () => {
       <div className="page-loading"></div>
 
       {/* Hero Section */}
-      <section className="hero flex items-center justify-center text-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-24">
+      <section className="hero flex items-center justify-center text-white relative overflow-hidden min-h-screen" style={{minHeight: '100vh'}}>
+        {/* Video Background */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover z-0 opacity-70"
+        >
+          <source src={heroVideo} type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+        {/* Overlay (optional for darker text) */}
+        <div className="absolute inset-0 bg-black bg-opacity-60 z-10"></div>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-24 relative z-20 pt-40">
           <div className="max-w-3xl mx-auto text-center animate-fade-in-down">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
               Revolutionize Your School Bus Management

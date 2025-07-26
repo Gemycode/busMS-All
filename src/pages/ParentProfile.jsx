@@ -3,17 +3,56 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom"
 import LiveTrackingMap from "../components/LiveTrackingMap" // Import LiveTrackingMap component
+import axios from 'axios';
+import Toast from '../components/Toast';
 
 const ParentProfile = () => {
   const [children, setChildren] = useState([]);
   const [attendanceHistory, setAttendanceHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [user, setUser] = useState(null);
+  const [toast, setToast] = useState({ show: false, type: 'success', message: '' });
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [editLoading, setEditLoading] = useState(false);
 
   // Fetch children and attendance on mount
   useEffect(() => {
     fetchChildrenAndAttendance();
+    fetchCurrentUser();
   }, []);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://localhost:5000/api/users/me", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const userData = res.data.data?.user || res.data.user;
+      setUser(userData);
+      // Initialize edit form with current user data
+      setEditForm({
+        firstName: userData?.firstName || '',
+        lastName: userData?.lastName || '',
+        email: userData?.email || '',
+        phone: userData?.phone || '',
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+    } catch (err) {
+      console.error("Error fetching user:", err);
+    }
+  };
 
   const fetchChildrenAndAttendance = async () => {
     setLoading(true);
@@ -21,21 +60,20 @@ const ParentProfile = () => {
     try {
       // Fetch children
       const token = localStorage.getItem("token");
-      const childrenRes = await fetch("http://localhost:5000/api/users/me/children", {
+      const childrenRes = await axios.get("http://localhost:5000/api/users/me/children", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const childrenData = await childrenRes.json();
-      if (!childrenRes.ok) throw new Error(childrenData.message || "Failed to fetch children");
-      setChildren(childrenData.children || []);
+      const childrenData = childrenRes.data;
+      setChildren(childrenData.data?.children || childrenData.children || []);
       // Fetch attendance for all children
-      const attendanceRes = await fetch("http://localhost:5000/api/attendances/parent", {
+      const attendanceRes = await axios.get("http://localhost:5000/api/attendances/parent", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const attendanceData = await attendanceRes.json();
-      if (!attendanceRes.ok) throw new Error(attendanceData.message || "Failed to fetch attendance");
-      setAttendanceHistory(attendanceData || []);
+      setAttendanceHistory(attendanceRes.data || []);
     } catch (err) {
-      setError(err.message || "Error loading data");
+      const errorMsg = err.response?.data?.message || err.message || "Error loading data";
+      setError(errorMsg);
+      setToast({ show: true, type: 'error', message: errorMsg });
     } finally {
       setLoading(false);
     }
@@ -53,22 +91,17 @@ const ParentProfile = () => {
         boardingTime: status === "present" ? new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" }) : "",
         deboardingTime: ""
       };
-      const response = await fetch("http://localhost:5000/api/attendances", {
-        method: "POST",
+      await axios.post("http://localhost:5000/api/attendances", attendanceData, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(attendanceData),
+        }
       });
-      if (response.ok) {
-        fetchChildrenAndAttendance();
-      } else {
-        const errData = await response.json();
-        alert(errData.message || "Error marking attendance");
-      }
+      setToast({ show: true, type: 'success', message: `Attendance marked as ${status} successfully` });
+      fetchChildrenAndAttendance();
     } catch (error) {
-      alert("Network error. Please try again.");
+      const errorMsg = error.response?.data?.message || "Network error. Please try again.";
+      setToast({ show: true, type: 'error', message: errorMsg });
     }
   };
 
@@ -95,9 +128,100 @@ const ParentProfile = () => {
     }
   };
 
+  const handleEditFormChange = (e) => {
+    setEditForm({
+      ...editForm,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    setEditLoading(true);
+    
+    try {
+      const token = localStorage.getItem("token");
+      
+      // Validate password change if new password is provided
+      if (editForm.newPassword) {
+        if (!editForm.currentPassword) {
+          throw new Error("Current password is required to change password");
+        }
+        if (editForm.newPassword !== editForm.confirmPassword) {
+          throw new Error("New passwords do not match");
+        }
+        if (editForm.newPassword.length < 6) {
+          throw new Error("New password must be at least 6 characters");
+        }
+      }
+      
+      // Prepare update data
+      const updateData = {
+        firstName: editForm.firstName,
+        lastName: editForm.lastName,
+        email: editForm.email,
+        phone: editForm.phone
+      };
+      
+      // Add password change if provided
+      if (editForm.newPassword) {
+        updateData.currentPassword = editForm.currentPassword;
+        updateData.newPassword = editForm.newPassword;
+      }
+      
+      await axios.patch("http://localhost:5000/api/users/me", updateData, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      setToast({ show: true, type: 'success', message: 'Profile updated successfully' });
+      setEditMode(false);
+      
+      // Reset password fields
+      setEditForm(prev => ({
+        ...prev,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      }));
+      
+      // Refresh user data
+      fetchCurrentUser();
+      
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || error.message || "Error updating profile";
+      setToast({ show: true, type: 'error', message: errorMsg });
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditMode(false);
+    // Reset form to current user data
+    setEditForm({
+      firstName: user?.firstName || '',
+      lastName: user?.lastName || '',
+      email: user?.email || '',
+      phone: user?.phone || '',
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    });
+  };
+
   return (
     <div className="font-sans text-gray-800 bg-gray-50 min-h-screen">
-      <main className="pt-20 pb-16">
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ show: false, type: 'success', message: '' })}
+        />
+      )}
+      <main className="pt-0 pb-16">
         {/* Header */}
         <section className="bg-gradient-to-r from-brand-dark-blue to-brand-medium-blue py-8">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -140,10 +264,200 @@ const ParentProfile = () => {
                       <div className="h-24 w-24 rounded-full bg-brand-beige mx-auto mb-4 flex items-center justify-center">
                         <i className="fas fa-user text-brand-dark-blue text-3xl"></i>
                       </div>
-                      <h2 className="text-xl font-bold text-brand-dark-blue">Parent Account</h2>
-                      <p className="text-gray-600">Parent</p>
+                      <h2 className="text-xl font-bold text-brand-dark-blue">
+                        {user ? `${user.firstName} ${user.lastName}` : 'Parent Account'}
+                      </h2>
+                      <p className="text-gray-600">{user?.email || 'Parent'}</p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {user?.phone || 'No phone number'}
+                      </p>
                     </div>
+                    {/* Additional User Info */}
+                    {user && (
+                      <div className="border-t pt-4">
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Role:</span>
+                            <span className="font-medium capitalize">{user.role}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Children:</span>
+                            <span className="font-medium">{children.length}</span>
+                          </div>
+                          {user.createdAt && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Member since:</span>
+                              <span className="font-medium">
+                                {new Date(user.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        {/* Edit Profile Button */}
+                        <div className="mt-4 pt-4 border-t">
+                          {!editMode ? (
+                            <button
+                              onClick={() => setEditMode(true)}
+                              className="w-full px-4 py-2 bg-brand-medium-blue text-white font-medium rounded-md hover:bg-brand-dark-blue transition-colors duration-200"
+                            >
+                              <i className="fas fa-edit mr-2"></i>Edit Profile
+                            </button>
+                          ) : (
+                            <div className="space-y-2">
+                              <button
+                                onClick={handleCancelEdit}
+                                className="w-full px-4 py-2 bg-gray-500 text-white font-medium rounded-md hover:bg-gray-600 transition-colors duration-200"
+                              >
+                                <i className="fas fa-times mr-2"></i>Cancel
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
+                  
+                  {/* Edit Profile Form */}
+                  {editMode && (
+                    <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                      <h3 className="text-lg font-bold text-brand-dark-blue mb-4">
+                        <i className="fas fa-edit mr-2"></i>Edit Profile
+                      </h3>
+                      <form onSubmit={handleSaveProfile} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              First Name
+                            </label>
+                            <input
+                              type="text"
+                              name="firstName"
+                              value={editForm.firstName}
+                              onChange={handleEditFormChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-medium-blue"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Last Name
+                            </label>
+                            <input
+                              type="text"
+                              name="lastName"
+                              value={editForm.lastName}
+                              onChange={handleEditFormChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-medium-blue"
+                              required
+                            />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Email
+                          </label>
+                          <input
+                            type="email"
+                            name="email"
+                            value={editForm.email}
+                            onChange={handleEditFormChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-medium-blue"
+                            required
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Phone Number
+                          </label>
+                          <input
+                            type="tel"
+                            name="phone"
+                            value={editForm.phone}
+                            onChange={handleEditFormChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-medium-blue"
+                          />
+                        </div>
+                        
+                        {/* Password Change Section */}
+                        <div className="border-t pt-4">
+                          <h4 className="text-md font-medium text-gray-700 mb-3">Change Password (Optional)</h4>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Current Password
+                              </label>
+                              <input
+                                type="password"
+                                name="currentPassword"
+                                value={editForm.currentPassword}
+                                onChange={handleEditFormChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-medium-blue"
+                                placeholder="Enter current password to change"
+                              />
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  New Password
+                                </label>
+                                <input
+                                  type="password"
+                                  name="newPassword"
+                                  value={editForm.newPassword}
+                                  onChange={handleEditFormChange}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-medium-blue"
+                                  placeholder="Min 6 characters"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Confirm New Password
+                                </label>
+                                <input
+                                  type="password"
+                                  name="confirmPassword"
+                                  value={editForm.confirmPassword}
+                                  onChange={handleEditFormChange}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-medium-blue"
+                                  placeholder="Confirm new password"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex space-x-3 pt-4">
+                          <button
+                            type="submit"
+                            disabled={editLoading}
+                            className="flex-1 px-4 py-2 bg-brand-medium-blue text-white font-medium rounded-md hover:bg-brand-dark-blue transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {editLoading ? (
+                              <>
+                                <i className="fas fa-spinner fa-spin mr-2"></i>
+                                Saving...
+                              </>
+                            ) : (
+                              <>
+                                <i className="fas fa-save mr-2"></i>
+                                Save Changes
+                              </>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCancelEdit}
+                            className="px-4 py-2 bg-gray-500 text-white font-medium rounded-md hover:bg-gray-600 transition-colors duration-200"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
                 </div>
                 {/* Right Column - Children & Attendance */}
                 <div className="lg:col-span-2">
@@ -225,18 +539,15 @@ const ParentProfile = () => {
                         <table className="min-w-full divide-y divide-gray-200">
                           <thead className="bg-gray-50">
                             <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Student
-                              </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Date
-                              </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Status
-                              </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Boarding Time
-                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trip</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bus</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Boarding</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deboarding</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
@@ -251,13 +562,14 @@ const ParentProfile = () => {
                                   {new Date(record.date).toLocaleDateString()}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getAttendanceStatusColor(record.status)}`}>
-                                    {record.status}
-                                  </span>
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getAttendanceStatusColor(record.status)}`}>{record.status}</span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {record.boardingTime || "N/A"}
-                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">{record.tripId?.routeId?.name || '-'}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">{record.tripId?.busId?.BusNumber || '-'}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">{record.tripId ? 'Trip' : 'Day'}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">{record.boardingTime || '-'}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">{record.deboardingTime || '-'}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">{record.notes || '-'}</td>
                               </tr>
                             ))}
                           </tbody>

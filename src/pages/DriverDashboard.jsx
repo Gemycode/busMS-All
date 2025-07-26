@@ -27,6 +27,8 @@ const DriverDashboard = () => {
   const [vehicleStatus, setVehicleStatus] = useState(null);
   const [messages, setMessages] = useState([]);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [assignedTrips, setAssignedTrips] = useState([]);
+  const [confirmedTrips, setConfirmedTrips] = useState([]);
   const [attendanceData, setAttendanceData] = useState({
     personId: '',
     personType: 'Employee',
@@ -38,6 +40,7 @@ const DriverDashboard = () => {
   // --- Attendance for passengers ---
   const [passengerAttendance, setPassengerAttendance] = useState({}); // { [passengerId]: 'present' | 'absent' }
   const [routeStats, setRouteStats] = useState({}); // { [routeId]: { present: n, absent: n } }
+  const [expandedTripId, setExpandedTripId] = useState(null);
 
   // Dummy data for demonstration
 
@@ -58,6 +61,54 @@ const DriverDashboard = () => {
     setNotifications(dummyNotifications);
   }, [dispatch, user]);
 
+  useEffect(() => {
+    console.log('trips:', trips);
+  }, [trips]);
+
+  useEffect(() => {
+    console.log('assignedTrips:', assignedTrips);
+  }, [assignedTrips]);
+
+  // Separate trips into assigned and confirmed based on bookings
+  useEffect(() => {
+    if (trips.length > 0 && user && user._id) {
+      // فقط الرحلات الخاصة بالسائق الحالي
+      const myTrips = trips.filter(trip =>
+        (trip.driverId?._id === user._id || trip.driverId === user._id)
+      );
+
+      console.log('user._id:', user._id);
+      console.log('trips:', trips);
+      console.log('myTrips:', myTrips);
+      console.log('trip.driverId examples:', trips.map(t => ({ tripId: t._id, driverId: t.driverId, driverIdType: typeof t.driverId })));
+
+      if (myTrips.length > 0 && bookings.length > 0) {
+        const tripsWithBookings = myTrips.filter(trip => {
+          const tripBookings = bookings.filter(
+            booking =>
+              booking.routeId?._id === trip.routeId?._id &&
+              booking.status === 'confirmed'
+          );
+          return tripBookings.length > 0;
+        });
+
+        const tripsWithoutBookings = myTrips.filter(trip => {
+          const tripBookings = bookings.filter(
+            booking =>
+              booking.routeId?._id === trip.routeId?._id &&
+              booking.status === 'confirmed'
+          );
+          return tripBookings.length === 0;
+        });
+
+        setConfirmedTrips(tripsWithBookings);
+        setAssignedTrips(tripsWithoutBookings);
+      } else {
+        setAssignedTrips(myTrips);
+        setConfirmedTrips([]);
+      }
+    }
+  }, [trips, bookings, user]);
 
 
   useEffect(() => {
@@ -242,16 +293,30 @@ const DriverDashboard = () => {
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center">
               <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
                 <i className="fas fa-route text-brand-medium-blue text-xl"></i>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Trips</p>
+                <p className="text-sm font-medium text-gray-600">Assigned Trips</p>
                 <p className="text-2xl font-bold text-brand-dark-blue">
-                  {trips.filter(t => t.status !== 'completed').length}
+                  {assignedTrips.length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center">
+              <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                <i className="fas fa-check-circle text-green-600 text-xl"></i>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Confirmed Trips</p>
+                <p className="text-2xl font-bold text-brand-dark-blue">
+                  {confirmedTrips.length}
                 </p>
               </div>
             </div>
@@ -305,12 +370,49 @@ const DriverDashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Assigned Trips */}
+          {/* Trips Section */}
           <div className="lg:col-span-2">
+            {/* Confirmed Trips */}
+            {confirmedTrips.length > 0 && (
+              <div className="bg-white rounded-lg shadow-md mb-6">
+                <div className="p-6 border-b border-gray-200 bg-green-50">
+                  <h3 className="text-lg font-bold text-green-800 flex items-center">
+                    <i className="fas fa-check-circle mr-2"></i>
+                    Confirmed Trips
+                  </h3>
+                  <p className="text-sm text-green-600">Trips with confirmed passengers - Ready to start</p>
+                </div>
+                <div className="p-6">
+                  <div className="mt-4 space-y-3">
+                    {confirmedTrips.map((trip) => (
+                      <div
+                        key={trip._id}
+                        onClick={() => handleTripSelect(trip)}
+                        className={`p-4 rounded-lg cursor-pointer transition-all duration-200 border-2 ${selectedTrip?._id === trip._id ? 'bg-green-100 border-green-500 text-green-800 shadow-lg' : 'bg-green-50 border-green-200 hover:bg-green-100'}`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <p className="font-bold">{trip.routeId?.name}</p>
+                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-200 text-green-800">
+                            Confirmed
+                          </span>
+                        </div>
+                        <p className="text-sm mt-1">{new Date(trip.date).toLocaleDateString()}</p>
+                        <div className="mt-2 flex items-center text-sm text-green-700">
+                          <i className="fas fa-users mr-1"></i>
+                          <span>{bookings.filter(booking => booking.routeId?._id === trip.routeId?._id && booking.status === 'confirmed').length} passengers</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Assigned Trips */}
             <div className="bg-white rounded-lg shadow-md">
               <div className="p-6 border-b border-gray-200">
                 <h3 className="text-lg font-bold text-brand-dark-blue">Assigned Trips</h3>
-                <p className="text-sm text-gray-600">Manage your assigned trips for today</p>
+                <p className="text-sm text-gray-600">Trips assigned but waiting for passenger bookings</p>
               </div>
               <div className="p-6">
                 <div className="mt-4 space-y-3">
@@ -318,26 +420,65 @@ const DriverDashboard = () => {
                     <p>Loading trips...</p>
                   ) : tripsError ? (
                     <p className="text-red-500">Error loading trips.</p>
-                  ) : trips.length > 0 ? (
-                    trips.map((trip) => (
+                  ) : assignedTrips.length > 0 ? (
+                    assignedTrips.map((trip) => (
                       <div
                         key={trip._id}
-                        onClick={() => handleTripSelect(trip)}
                         className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${selectedTrip?._id === trip._id ? 'bg-brand-medium-blue text-white shadow-lg' : 'bg-gray-100 hover:bg-gray-200'}`}
+                        onClick={() => handleTripSelect(trip)}
                       >
                         <div className="flex justify-between items-center">
-                          <p className="font-bold">{trip.routeId?.name}</p>
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${trip.status === 'completed' ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'}`}>
-                            {trip.status}
-                          </span>
+                          <div>
+                            <p className="font-bold text-lg">{trip.routeId?.name || 'No Route Name'}</p>
+                            <p className="text-sm text-gray-600">Date: {trip.date ? new Date(trip.date).toLocaleDateString() : '-'}</p>
+                            <p className="text-sm text-gray-600">Status: {trip.status}</p>
+                          </div>
+                          <button
+                            className="ml-4 px-3 py-1 bg-brand-dark-blue text-brand-beige rounded shadow hover:bg-brand-medium-blue"
+                            onClick={e => { e.stopPropagation(); setExpandedTripId(expandedTripId === trip._id ? null : trip._id); }}
+                          >
+                            {expandedTripId === trip._id ? 'إخفاء التفاصيل' : 'عرض التفاصيل'}
+                          </button>
                         </div>
-                        <p className="text-sm mt-1">{new Date(trip.date).toLocaleDateString()}</p>
+                        {expandedTripId === trip._id && (
+                          <div className="mt-4 text-sm bg-white rounded p-4 border border-brand-dark-blue">
+                            <div className="mb-2">
+                              <span className="font-semibold">Bus Number:</span> {trip.busId?.BusNumber || '-'}<br/>
+                              <span className="font-semibold">Bus Capacity:</span> {trip.busId?.capacity || '-'}<br/>
+                              <span className="font-semibold">Bus Status:</span> {trip.busId?.status || '-'}
+                            </div>
+                            <div className="mb-2">
+                              <span className="font-semibold">Route Start:</span> {trip.routeId?.start_point?.name || '-'}<br/>
+                              <span className="font-semibold">Route End:</span> {trip.routeId?.end_point?.name || '-'}<br/>
+                              <span className="font-semibold">Estimated Time:</span> {trip.routeId?.estimated_time || '-'}
+                            </div>
+                            <div className="mb-2">
+                              <span className="font-semibold">Driver:</span> {trip.driverId?.firstName} {trip.driverId?.lastName} ({trip.driverId?.email})<br/>
+                              <span className="font-semibold">Phone:</span> {trip.driverId?.phone || '-'}<br/>
+                              <span className="font-semibold">License:</span> {trip.driverId?.licenseNumber || '-'}
+                            </div>
+                            <div>
+                              <span className="font-semibold">Stops:</span>
+                              <ul className="list-disc ml-6">
+                                {trip.routeId?.stops && trip.routeId.stops.length > 0 ? (
+                                  trip.routeId.stops.map((stop, idx) => (
+                                    <li key={idx}>
+                                      {stop.name} (lat: {stop.lat}, long: {stop.long}, ترتيب: {stop.order})
+                                    </li>
+                                  ))
+                                ) : (
+                                  <li>لا توجد محطات</li>
+                                )}
+                              </ul>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))
                   ) : (
                     <div className="text-center py-6">
                       <i className="fas fa-route text-4xl text-gray-300 mb-3"></i>
-                      <p className="font-medium text-gray-600">No trips assigned for today.</p>
+                      <p className="font-medium text-gray-600">No assigned trips for today.</p>
                       <p className="text-sm text-gray-500">Contact your administrator for assignments.</p>
                     </div>
                   )}
@@ -355,7 +496,7 @@ const DriverDashboard = () => {
                 <div className="p-6">
                   <div className="bg-brand-beige rounded-lg p-4 mb-4">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-semibold text-brand-dark-blue">{currentTrip.name}</h3>
+                      <h3 className="font-semibold text-brand-dark-blue">{currentTrip.routeId?.name}</h3>
                       <span className="text-sm text-green-600 font-medium">
                         <i className="fas fa-circle mr-1"></i>
                         In Progress

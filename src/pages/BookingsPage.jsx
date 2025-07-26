@@ -15,9 +15,20 @@ const BookingsPage = () => {
       setLoading(true);
       try {
         const res = await api.get('/bookings/parent');
-        setBookings(res.data?.data?.bookings || []);
+        // Map backend data to UI format
+        const bookings = (res.data || []).map((b) => ({
+          _id: b._id,
+          childName: b.studentId?.firstName && b.studentId?.lastName ? `${b.studentId.firstName} ${b.studentId.lastName}` : 'N/A',
+          route: b.routeId?.name || 'N/A',
+          bus: b.busId?.BusNumber || 'N/A',
+          date: b.date ? new Date(b.date).toLocaleDateString() : 'N/A',
+          time: b.date ? new Date(b.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A',
+          status: b.status || 'confirmed',
+        }));
+        setBookings(bookings);
       } catch (error) {
         setToast({ show: true, type: 'error', message: error.response?.data?.message || 'حدث خطأ أثناء جلب الحجوزات' });
+        setBookings([]);
       } finally {
         setLoading(false);
       }
@@ -101,13 +112,14 @@ const BookingsPage = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bus</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Child</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredBookings.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="text-center py-6 text-gray-500">No bookings found.</td>
+                          <td colSpan={7} className="text-center py-6 text-gray-500">No bookings found.</td>
                         </tr>
                       ) : (
                         filteredBookings.map((booking) => (
@@ -127,6 +139,7 @@ const BookingsPage = () => {
                                 {booking.status}
                               </span>
                             </td>
+                            <td className="px-6 py-4 whitespace-nowrap">{booking.childName}</td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               {booking.status === 'confirmed' && (
                                 <button

@@ -28,7 +28,8 @@ const Header = () => {
   return (
     <header className="bg-brand-dark-blue text-white shadow-md fixed top-0 left-0 w-full z-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+        <div className="flex justify-between h-16 items-center">
+          {/* Logo */}
           <div className="flex text-brand-beige items-center">
             <Link to="/" className="flex text-[#ead8b1] items-center">
               <i className="fas fa-bus text-2xl mr-2 animate-bounce"></i>
@@ -36,32 +37,33 @@ const Header = () => {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link
-              to="/"
-              className={`font-medium text-white hover:text-brand-beige transition-colors duration-200 nav-link ${isActive("/") ? "active" : ""}`}
-            >
-              Home
-            </Link>
-            <Link
-              to="/about"
-              className={`font-medium text-white hover:text-brand-beige transition-colors duration-200 nav-link ${isActive("/about") ? "active" : ""}`}
-            >
-              About
-            </Link>
-            <Link
+          {/* Centered Desktop Navigation */}
+          <div className="flex-1 flex justify-center">
+            <nav className="hidden md:flex items-center space-x-8">
+              <Link
+                to="/"
+                className={`font-medium text-white hover:text-brand-beige transition-colors duration-200 nav-link ${isActive("/") ? "active" : ""}`}
+              >
+                Home
+              </Link>
+              <Link
+                to="/about"
+                className={`font-medium text-white hover:text-brand-beige transition-colors duration-200 nav-link ${isActive("/about") ? "active" : ""}`}
+              >
+                About
+              </Link>
+              {/* <Link
               to="/features"
               className={`font-medium text-white hover:text-brand-beige transition-colors duration-200 nav-link ${isActive("/features") ? "active" : ""}`}
             >
               Features
-            </Link>
-            <Link
+            </Link> */}
+            {/* <Link
               to="/users"
               className={`font-medium text-white hover:text-brand-beige transition-colors duration-200 nav-link ${isActive("/users") ? "active" : ""}`}
             >
               Target Users
-            </Link>
+            </Link> */}
             <Link
               to="/contact"
               className={`font-medium text-white hover:text-brand-beige transition-colors duration-200 nav-link ${isActive("/contact") ? "active" : ""}`}
@@ -70,13 +72,13 @@ const Header = () => {
             </Link>
 
             {/* Weather Widget */}
-            <div className="hidden lg:flex items-center text-white">
+            {/* <div className="hidden lg:flex items-center text-white">
               <i className="fas fa-sun weather-icon mr-1"></i>
               <span className="text-sm">28°C</span>
-            </div>
+            </div> */}
 
             {/* Language Selector */}
-            <div className="relative inline-block text-left">
+            {/* <div className="relative inline-block text-left">
               <select className="appearance-none bg-transparent border border-gray-600 rounded-md pl-3 pr-8 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-brand-beige focus:border-brand-beige">
                 <option value="en">English</option>
                 <option value="es">Español</option>
@@ -86,12 +88,16 @@ const Header = () => {
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-white">
                 <i className="fas fa-chevron-down text-xs"></i>
               </div>
-            </div>
+            </div> */}
 
-            {/* Notification Bell */}
+        
+  
+          </nav>
+          </div>
+
+          {/* Notification & User Menu (right) */}
+          <div className="hidden md:flex items-center space-x-4">
             {user && <NotificationBell />}
-
-            {/* User Info or Sign In */}
             {user ? (
               <div className="relative" ref={userMenuRef}>
                 <button
@@ -108,54 +114,55 @@ const Header = () => {
                   </span>
                   <i className="fas fa-user text-brand-beige"></i>
                 </button>
-
                 {/* القائمة المنسدلة */}
                 {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white text-black rounded shadow-lg z-50 overflow-hidden">
-                    <div className="px-4 py-2 border-b">
-                      <div className="font-bold">{user.firstName} {user.lastName}</div>
-                      <div className="text-sm text-gray-600">{user.email}</div>
+                  <div className="absolute right-0 mt-3 w-64 bg-white text-brand-dark-blue rounded-2xl shadow-2xl z-50 overflow-hidden border border-brand-dark-blue animate-fade-in-up">
+                    {/* السهم الصغير */}
+                    <div className="absolute -top-2 right-6 w-4 h-4 bg-white border-l border-t border-brand-dark-blue rotate-45 z-10"></div>
+                    <div className="px-6 py-4 border-b flex flex-col items-center gap-1 bg-white">
+                      <div className="font-bold text-lg flex items-center gap-2">
+                        <i className="fas fa-user-circle text-brand-dark-blue text-2xl"></i>
+                        {user.firstName} {user.lastName}
+                      </div>
+                      <div className="text-sm text-brand-dark-blue/70">{user.email}</div>
                     </div>
                     {user.role === 'parent' && (
                       <>
                         <Link
                           to="/dashboard/parent"
-                          className="block w-full text-center bg-brand-beige text-brand-dark-blue font-bold py-2 rounded hover:bg-opacity-90"
+                          className="flex items-center gap-2 w-full px-6 py-3 text-brand-dark-blue font-bold hover:bg-brand-dark-blue hover:text-brand-beige transition rounded-none"
                           onClick={() => setUserMenuOpen(false)}
                         >
-                          <i className="fas fa-home mr-1"></i>Parent Dashboard
+                          <i className="fas fa-home"></i>
+                          Parent Dashboard
                         </Link>
                         <Link
                           to="/parent-profile"
-                          className="block w-full text-center bg-brand-beige text-brand-dark-blue font-bold py-2 rounded hover:bg-opacity-90"
+                          className="flex items-center gap-2 w-full px-6 py-3 text-brand-dark-blue font-bold hover:bg-brand-dark-blue hover:text-brand-beige transition rounded-none"
                           onClick={() => setUserMenuOpen(false)}
                         >
-                          <i className="fas fa-user mr-1"></i>Profile
+                          <i className="fas fa-user"></i>
+                          Profile
                         </Link>
                       </>
                     )}
-                    <Link
-                      to="/profile"
-                      className="block w-full text-center bg-[#ead8b1] text-[#0e90cb] font-bold py-2 rounded hover:bg-opacity-90"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      profile
-                    </Link>
                     {user.role === 'admin' && (
                       <Link
                         to="/admin-dashboard"
                         onClick={() => setUserMenuOpen(false)}
-                        className="block w-full text-center bg-orange-500 text-white font-bold py-2 rounded hover:bg-orange-600"
+                        className="flex items-center gap-2 w-full px-6 py-3 text-white font-bold bg-orange-500 hover:bg-orange-600 transition rounded-none"
                       >
+                        <i className="fas fa-tools"></i>
                         Admin dashboard
                       </Link>
                     )}
                         {(user.role === 'admin' || user.role === 'manager') && (
                   <Link
                     to="/attendance"
-                    className="block w-full text-center bg-[#ead8b1] text-[#0e90cb] font-bold py-2 rounded hover:bg-opacity-90"
+                    className="flex items-center gap-2 w-full px-6 py-3 text-brand-dark-blue font-bold hover:bg-brand-dark-blue hover:text-brand-beige transition rounded-none"
                     onClick={() => setUserMenuOpen(false)}
                   >
+                    <i className="fas fa-calendar-check"></i>
                     Attendance Management
                   </Link>
                 )}
@@ -163,19 +170,40 @@ const Header = () => {
                       <Link
                         to="/manager-dashboard"
                         onClick={() => setUserMenuOpen(false)}
-                        className="block w-full text-center bg-[#ead8b1] text-[#0e90cb] font-bold py-2 rounded hover:bg-opacity-90"
+                        className="flex items-center gap-2 w-full px-6 py-3 text-brand-dark-blue font-bold hover:bg-brand-dark-blue hover:text-brand-beige transition rounded-none"
                       >
+                        <i className="fas fa-briefcase"></i>
                         Manager dashboard
                       </Link>
                     )}
-
+                    {user.role === 'driver' && (
+                      <>
+                        <Link
+                          to="/driver-dashboard"
+                          className="flex items-center gap-2 w-full px-6 py-3 text-brand-dark-blue font-bold hover:bg-brand-dark-blue hover:text-brand-beige transition rounded-none"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <i className="fas fa-tachometer-alt"></i>
+                          Driver Dashboard
+                        </Link>
+                        <Link
+                          to="/driver-profile"
+                          className="flex items-center gap-2 w-full px-6 py-3 text-brand-dark-blue font-bold hover:bg-brand-dark-blue hover:text-brand-beige transition rounded-none"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <i className="fas fa-user"></i>
+                          Profile
+                        </Link>
+                      </>
+                    )}
                     <button
                       onClick={() => {
                         dispatch(logout());
                         setUserMenuOpen(false);
                       }}
-                      className="block w-full text-center  px-4 py-2 text-red-600 hover:bg-red-100 text-sm"
+                      className="flex items-center gap-2 w-full px-6 py-3 text-red-600 hover:bg-brand-dark-blue hover:text-brand-beige text-base font-bold transition rounded-none"
                     >
+                      <i className="fas fa-sign-out-alt"></i>
                       Sign Out
                     </button>
                   </div>
@@ -186,18 +214,7 @@ const Header = () => {
                 Sign In
               </Link>
             )}
-          </nav>
-
-          {/* Parent Dashboard Button (Desktop) */}
-          {user && user.role === 'parent' && (
-            <Link
-              to="/dashboard/parent"
-              className="font-medium text-brand-beige bg-brand-dark-blue border border-brand-beige rounded px-3 py-2 hover:bg-brand-beige hover:text-brand-dark-blue transition-colors duration-200"
-              style={{ marginLeft: 8 }}
-            >
-              <i className="fas fa-home mr-2"></i>Parent Dashboard
-            </Link>
-          )}
+          </div>
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center space-x-2">
@@ -235,6 +252,25 @@ const Header = () => {
               >
                 <i className="fas fa-home mr-1"></i>Parent Dashboard
               </Link>
+            )}
+            {/* Driver Dashboard Button (Mobile) */}
+            {user && user.role === 'driver' && (
+              <>
+                <Link
+                  to="/driver-dashboard"
+                  className="block px-3 py-2 bg-brand-beige text-brand-dark-blue font-bold rounded-md mt-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <i className="fas fa-tachometer-alt mr-1"></i>Driver Dashboard
+                </Link>
+                <Link
+                  to="/driver-profile"
+                  className="block px-3 py-2 bg-brand-beige text-brand-dark-blue font-bold rounded-md mt-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <i className="fas fa-user mr-1"></i>Profile
+                </Link>
+              </>
             )}
             <Link
               to="/"

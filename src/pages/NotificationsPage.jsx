@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
@@ -12,102 +13,35 @@ const NotificationsPage = () => {
   const [selectedNotifications, setSelectedNotifications] = useState([]);
   const navigate = useNavigate();
 
-  // Dummy notifications data
-  const dummyNotifications = [
-    {
-      id: 1,
-      title: "Bus Arrival",
-      message: "Your bus will arrive in 5 minutes at the pickup location",
-      type: "arrival",
-      time: "2 min ago",
-      date: "2024-01-15",
-      isRead: false,
-      route: "Route A - School Zone",
-      priority: "high"
-    },
-    {
-      id: 2,
-      title: "Booking Confirmed",
-      message: "Your booking for tomorrow has been confirmed successfully",
-      type: "booking",
-      time: "10 min ago",
-      date: "2024-01-15",
-      isRead: false,
-      route: "Route B - Residential Area",
-      priority: "medium"
-    },
-    {
-      id: 3,
-      title: "Route Update",
-      message: "Route C schedule has been updated due to road construction",
-      type: "update",
-      time: "1 hour ago",
-      date: "2024-01-15",
-      isRead: true,
-      route: "Route C - Express Line",
-      priority: "medium"
-    },
-    {
-      id: 4,
-      title: "Maintenance Alert",
-      message: "Bus maintenance scheduled for Friday. Alternative routes will be provided",
-      type: "maintenance",
-      time: "2 hours ago",
-      date: "2024-01-15",
-      isRead: true,
-      route: "All Routes",
-      priority: "high"
-    },
-    {
-      id: 5,
-      title: "Child Boarded",
-      message: "Ahmed has successfully boarded the bus",
-      type: "boarding",
-      time: "3 hours ago",
-      date: "2024-01-15",
-      isRead: true,
-      route: "Route A - School Zone",
-      priority: "low"
-    },
-    {
-      id: 6,
-      title: "Weather Alert",
-      message: "Heavy rain expected. Buses may be delayed",
-      type: "alert",
-      time: "4 hours ago",
-      date: "2024-01-15",
-      isRead: false,
-      route: "All Routes",
-      priority: "high"
-    },
-    {
-      id: 7,
-      title: "Driver Change",
-      message: "New driver assigned to Route B starting tomorrow",
-      type: "update",
-      time: "1 day ago",
-      date: "2024-01-14",
-      isRead: true,
-      route: "Route B - Residential Area",
-      priority: "medium"
-    },
-    {
-      id: 8,
-      title: "Monthly Report",
-      message: "Your monthly bus usage report is ready",
-      type: "report",
-      time: "2 days ago",
-      date: "2024-01-13",
-      isRead: true,
-      route: "All Routes",
-      priority: "low"
-    }
-  ];
+  // جلب الدور من localStorage أو من user object (يمكنك تعديله حسب مشروعك)
+  const user = JSON.parse(localStorage.getItem('user'));
+  const role = user?.role || 'parent';
 
   useEffect(() => {
-    setNotifications(dummyNotifications);
-    setFilteredNotifications(dummyNotifications);
-  }, []);
+    const fetchNotifications = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get('/api/notifications', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        let notifs = res.data;
+        // فلترة حسب الدور إذا لزم الأمر (لو الباك اند لا يفلتر)
+        if (Array.isArray(notifs)) {
+          if (role && notifs[0] && notifs[0].role) {
+            notifs = notifs.filter(n => n.role === role || !n.role);
+          }
+        } else {
+          notifs = [];
+        }
+        setNotifications(notifs);
+        setFilteredNotifications(notifs);
+      } catch (err) {
+        setNotifications([]);
+        setFilteredNotifications([]);
+      }
+    };
+    fetchNotifications();
+  }, [role]);
 
   useEffect(() => {
     let filtered = notifications;
@@ -137,49 +71,49 @@ const NotificationsPage = () => {
   }, [notifications, filter, typeFilter, searchTerm]);
 
   const markAsRead = (notificationId) => {
-    setNotifications(prev => 
-      prev.map(n => 
-        n.id === notificationId ? { ...n, isRead: true } : n
+    setNotifications(prev =>
+      prev.map(n =>
+        (n._id === notificationId || n.id === notificationId) ? { ...n, isRead: true } : n
       )
     );
   };
 
   const markAsUnread = (notificationId) => {
-    setNotifications(prev => 
-      prev.map(n => 
-        n.id === notificationId ? { ...n, isRead: false } : n
+    setNotifications(prev =>
+      prev.map(n =>
+        (n._id === notificationId || n.id === notificationId) ? { ...n, isRead: false } : n
       )
     );
   };
 
   const deleteNotification = (notificationId) => {
-    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    setNotifications(prev => prev.filter(n => (n._id !== notificationId && n.id !== notificationId)));
   };
 
   const markSelectedAsRead = () => {
-    setNotifications(prev => 
-      prev.map(n => 
-        selectedNotifications.includes(n.id) ? { ...n, isRead: true } : n
+    setNotifications(prev =>
+      prev.map(n =>
+        selectedNotifications.includes(n._id || n.id) ? { ...n, isRead: true } : n
       )
     );
     setSelectedNotifications([]);
   };
 
   const deleteSelected = () => {
-    setNotifications(prev => prev.filter(n => !selectedNotifications.includes(n.id)));
+    setNotifications(prev => prev.filter(n => !selectedNotifications.includes(n._id || n.id)));
     setSelectedNotifications([]);
   };
 
   const toggleSelection = (notificationId) => {
-    setSelectedNotifications(prev => 
-      prev.includes(notificationId) 
+    setSelectedNotifications(prev =>
+      prev.includes(notificationId)
         ? prev.filter(id => id !== notificationId)
         : [...prev, notificationId]
     );
   };
 
   const selectAll = () => {
-    setSelectedNotifications(filteredNotifications.map(n => n.id));
+    setSelectedNotifications(filteredNotifications.map(n => n._id || n.id));
   };
 
   const deselectAll = () => {
@@ -245,7 +179,7 @@ const NotificationsPage = () => {
 
   // Handle notification click: mark as read and redirect to map-view with busId/routeId if present
   const handleNotificationClick = (notification) => {
-    markAsRead(notification.id);
+    markAsRead(notification._id || notification.id);
     if (notification.busId) {
       navigate(`/map-view?busId=${notification.busId}`);
     } else if (notification.routeId) {
@@ -392,7 +326,7 @@ const NotificationsPage = () => {
               <div className="divide-y divide-gray-200">
                 {filteredNotifications.map((notification) => (
                   <div
-                    key={notification.id}
+                    key={notification._id || notification.id}
                     className={`flex items-center space-x-3 p-4 rounded-lg shadow-sm mb-2 cursor-pointer transition-colors ${notification.isRead ? 'bg-gray-50' : 'bg-blue-50 hover:bg-blue-100'}`}
                     onClick={() => handleNotificationClick(notification)}
                   >
@@ -438,7 +372,7 @@ const NotificationsPage = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            markAsUnread(notification.id);
+                            markAsUnread(notification._id || notification.id);
                           }}
                           className="text-gray-400 hover:text-gray-600"
                           title="Mark as unread"
@@ -449,7 +383,7 @@ const NotificationsPage = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            markAsRead(notification.id);
+                            markAsRead(notification._id || notification.id);
                           }}
                           className="text-gray-400 hover:text-gray-600"
                           title="Mark as read"
@@ -460,7 +394,7 @@ const NotificationsPage = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          deleteNotification(notification.id);
+                          deleteNotification(notification._id || notification.id);
                         }}
                         className="text-red-400 hover:text-red-600"
                         title="Delete notification"

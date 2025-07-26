@@ -41,6 +41,7 @@ const BookingPage = () => {
   const [showAddChildModal, setShowAddChildModal] = useState(false);
   const [childForm, setChildForm] = useState({ firstName: '', lastName: '', email: '', password: '' });
   const { addChildLoading, addChildError, addChildSuccess } = useSelector(state => state.user);
+  const [pickupStop, setPickupStop] = useState('');
 
   useEffect(() => {
     dispatch(fetchRoutes());
@@ -150,17 +151,17 @@ const BookingPage = () => {
       // أضف طباعة للـ selectedTrip
       console.log('selectedTrip:', selectedTrip);
       const studentIdToSend = user && user.role === 'parent' ? passengerData.studentId : /* منطق آخر للطالب */ '';
+      let pickupLocation = { name: passengerData.pickupAddress || "N/A", lat: 0, long: 0 };
+      if (user && user.role === 'parent' && pickupStop) {
+        try { pickupLocation = JSON.parse(pickupStop); } catch { pickupLocation = { name: pickupStop }; }
+      }
       const res = await api.post('/bookings/create', {
         tripId: selectedTrip._id,
         studentId: studentIdToSend,
         busId: selectedTrip.busId?._id || selectedTrip.busId, // أرسل فقط ObjectId
         routeId: selectedTrip.routeId?._id || selectedTrip.routeId, // أرسل فقط ObjectId
         date: selectedTrip.date, // أرسل التاريخ إذا كان متوفر
-        pickupLocation: {
-          name: passengerData.pickupAddress || "N/A",
-          lat: 0, // عدل لاحقًا حسب اختيار المستخدم
-          long: 0
-        },
+        pickupLocation,
         dropoffLocation: {
           name: passengerData.dropoffAddress || "N/A",
           lat: 0, // عدل لاحقًا حسب اختيار المستخدم
@@ -390,6 +391,7 @@ const BookingPage = () => {
                 <form onSubmit={handleBookingSubmit} className="space-y-6">
                 {/* اختيار الطفل إذا كان Parent */}
                 {user && user.role === 'parent' && (
+                  <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Select Child *</label>
                     {childrenLoading ? (
@@ -420,6 +422,24 @@ const BookingPage = () => {
                       </div>
                     )}
                   </div>
+                  {/* Pickup Stop Dropdown for Parent */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Pickup Stop *</label>
+                    <select
+                      value={pickupStop}
+                      onChange={e => setPickupStop(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-medium-blue"
+                      required
+                    >
+                      <option value="">Select Pickup Stop</option>
+                      {Array.isArray(selectedRoute.stops) && selectedRoute.stops.map((stop, idx) => (
+                        <option key={idx} value={JSON.stringify(stop)}>
+                          {stop.name || stop.label || `Stop ${idx + 1}`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  </>
                 )}
                 {/* إذا لم يكن Parent، أظهر فورم بيانات الراكب العادي */}
                 {(!user || user.role !== 'parent') && (

@@ -162,9 +162,9 @@ const AdminBuses = () => {
                     <td className="px-4 py-2 md:py-3 whitespace-nowrap text-center font-medium text-gray-700">{bus.capacity}</td>
                     <td className="px-4 py-2 md:py-3 whitespace-nowrap text-center font-medium capitalize text-gray-700">{bus.status}</td>
                     <td className="px-4 py-2 md:py-3 whitespace-nowrap text-center font-medium text-gray-700">
-                      {typeof bus.assigned_driver_id === 'object' && bus.assigned_driver_id !== null
-                        ? `${bus.assigned_driver_id.firstName} ${bus.assigned_driver_id.lastName}`
-                        : bus.assigned_driver_id || '-'}
+                      {typeof bus.driverId === 'object' && bus.driverId !== null
+                        ? `${bus.driverId.firstName} ${bus.driverId.lastName}`
+                        : bus.driverId || '-'}
                     </td>
                     <td className="px-4 py-2 md:py-3 whitespace-nowrap text-center font-medium text-gray-700">
                       {typeof bus.route_id === 'object' && bus.route_id !== null

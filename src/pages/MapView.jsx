@@ -7,6 +7,7 @@ import TrackingTestPanel from "../components/TrackingTestPanel"
 import { useDispatch, useSelector } from "react-redux"
 import { fetchActiveBuses } from "../redux/trackingSlice"
 import { fetchRoutes } from "../redux/routesSlice"
+import api from "../redux/api";
 
 const MapView = () => {
   const [viewMode, setViewMode] = useState("all") // all, route, bus
@@ -14,6 +15,12 @@ const MapView = () => {
   const [selectedBus, setSelectedBus] = useState("")
   const [showFilters, setShowFilters] = useState(false)
   const [showTestPanel, setShowTestPanel] = useState(false)
+  const [selectedChild, setSelectedChild] = useState("");
+  const [children, setChildren] = useState([]);
+  const [childBookings, setChildBookings] = useState([]);
+  const [selectedTrip, setSelectedTrip] = useState("");
+  const [childLoading, setChildLoading] = useState(false);
+  const [tripLoading, setTripLoading] = useState(false);
 
   // --- جديد: حالة الدور والبيانات ---
 
@@ -29,6 +36,29 @@ const MapView = () => {
     dispatch(fetchActiveBuses());
     dispatch(fetchRoutes());
   }, [dispatch]);
+
+  // جلب الأبناء إذا كان Parent
+  useEffect(() => {
+    if (user?.role === "parent") {
+      setChildLoading(true);
+      api.get("/users/me/children").then(res => {
+        setChildren(res.data.data?.children || res.data.children || []);
+      }).finally(() => setChildLoading(false));
+    }
+  }, [user]);
+
+  // جلب حجوزات الطفل عند اختياره
+  useEffect(() => {
+    if (user?.role === "parent" && selectedChild) {
+      setTripLoading(true);
+      api.get(`/bookings/student/${selectedChild}`).then(res => {
+        setChildBookings((res.data || []).filter(b => b.status !== 'cancelled'));
+      }).finally(() => setTripLoading(false));
+    } else {
+      setChildBookings([]);
+      setSelectedTrip("");
+    }
+  }, [user, selectedChild]);
 
   // منطق اختيار الباص للـ parent/student
   const isParentOrStudent = user?.role === "parent" || user?.role === "student"
@@ -56,11 +86,25 @@ const MapView = () => {
   const busIdFromQuery = params.get('busId');
   const routeIdFromQuery = params.get('routeId');
 
-  // --- تمرير البيانات لمكون الخريطة ---
-  let busesToShow = buses
-  let routesToShow = routes
-  let busIdProp = busIdFromQuery || selectedBus || null
-  let routeIdProp = routeIdFromQuery || (viewMode === "route" ? selectedRoute : null)
+  // تحديد الباص والمسار بناءً على الرحلة المختارة
+  let busIdProp = null;
+  let routeIdProp = null;
+  if (user?.role === "parent" && selectedTrip) {
+    const selectedBooking = childBookings.find(b => b.tripId === selectedTrip || b.tripId?._id === selectedTrip);
+    console.log('selected booking:', selectedBooking);
+    if (selectedBooking) {
+      busIdProp = selectedBooking.busId?._id || selectedBooking.busId;
+      routeIdProp = selectedBooking.routeId?._id || selectedBooking.routeId;
+    }
+  } else {
+    // --- تمرير البيانات لمكون الخريطة ---
+    busIdProp = busIdFromQuery || selectedBus || null
+    routeIdProp = routeIdFromQuery || (viewMode === "route" ? selectedRoute : null)
+  }
+
+  // تعريف المتغيرين دائمًا لتفادي الخطأ
+  let busesToShow = buses;
+  let routesToShow = routes;
 
   if (isParentOrStudent) {
     // parent/student: عرض باص واحد فقط (المختار)
@@ -74,9 +118,13 @@ const MapView = () => {
     }
   }
 
+  console.log('buses:', buses);
+  console.log('routes:', routes);
+  console.log('busIdProp:', busIdProp, 'routeIdProp:', routeIdProp);
+
   return (
     <div className="font-sans text-gray-800 bg-gray-50 min-h-screen">
-      <main className="pt-20 pb-16">
+      <main className="pt-0 pb-16">
         {/* Header */}
         <section className="bg-gradient-to-r from-brand-dark-blue to-brand-medium-blue py-8">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -114,29 +162,8 @@ const MapView = () => {
         {/* Content */}
         <section className="py-8">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Test Panel */}
-            {showTestPanel && (
-              <div className="mb-8">
-                <TrackingTestPanel />
-              </div>
-            )}
-
             {/* اختيار الباص للـ parent/student */}
-            {hasMultipleBuses && (
-              <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-                <h3 className="text-lg font-bold text-brand-dark-blue mb-4">اختر الباص الخاص بك</h3>
-                <select
-                  value={selectedBus}
-                  onChange={e => setSelectedBus(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue"
-                >
-                  <option value="">اختر باص...</option>
-                  {busesForSelect.map(bus => (
-                    <option key={bus.id} value={bus.id}>{bus.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+            {/* حذف صندوق اختيار الباص للـ parent/student */}
 
             {/* Filters Panel (لغير parent/student) */}
             {showFilters && !isParentOrStudent && (
@@ -208,75 +235,87 @@ const MapView = () => {
               </div>
             )}
 
-            {/* Live Tracking Map */}
-            {loading ? (
-              <div className="text-center py-16 text-gray-500">جاري تحميل بيانات الخريطة...</div>
-            ) : error ? (
-              <div className="text-center py-16 text-red-500">{error}</div>
-            ) : isParentOrStudent && !busIdProp ? (
-              <div className="text-center py-16 text-gray-500">
-                يرجى اختيار باص لعرض التتبع الحي.
+            {/* Parent Flow: اختيار الطفل ثم الرحلة */}
+            {user?.role === "parent" ? (
+              <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                <div className="mb-4">
+                  <label className="block font-medium mb-1 text-brand-dark-blue">اختر الطفل</label>
+                  <select
+                    className="w-full border rounded px-3 py-2"
+                    value={selectedChild}
+                    onChange={e => setSelectedChild(e.target.value)}
+                    disabled={childLoading || children.length === 0}
+                  >
+                    <option value="">-- اختر الطفل --</option>
+                    {children.map(child => (
+                      <option key={child._id} value={child._id}>{child.firstName} {child.lastName}</option>
+                    ))}
+                  </select>
+                </div>
+                {selectedChild && (
+                  <div className="mb-4">
+                    <label className="block font-medium mb-1 text-brand-dark-blue">اختر الرحلة</label>
+                    <select
+                      className="w-full border rounded px-3 py-2"
+                      value={selectedTrip}
+                      onChange={e => setSelectedTrip(e.target.value)}
+                      disabled={tripLoading || childBookings.length === 0}
+                    >
+                      <option value="">-- اختر الرحلة --</option>
+                      {childBookings.map(b => (
+                        <option key={b._id} value={b.tripId?._id || b.tripId}>
+                          {b.routeId?.name || 'Trip'} | {b.date ? new Date(b.date).toLocaleDateString() : ''} | {b.busId?.BusNumber || ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {selectedChild && selectedTrip && (
+                  <div className="mt-8">
+                    <LiveTrackingMap
+                      routeId={routeIdProp}
+                      busId={busIdProp}
+                      userRole="parent"
+                      buses={buses}
+                      routes={(Array.isArray(routes) ? routes : []).filter(r => (r._id || r.id) === routeIdProp)}
+                      showRoutes={true}
+                      showStops={true}
+                      autoCenter={true}
+                    />
+                  </div>
+                )}
+                {(!selectedChild || !selectedTrip) && (
+                  <div className="text-center text-gray-500 py-8">
+                    يرجى اختيار الطفل ثم الرحلة لعرض الخريطة والتتبع.
+                  </div>
+                )}
               </div>
             ) : (
-              <LiveTrackingMap
-                routeId={routeIdProp}
-                busId={busIdProp}
-                userRole={user?.role}
-                buses={busesToShow}
-                routes={routesToShow}
-              />
+              // ... existing code for other roles ...
+              <>
+                {/* Live Tracking Map */}
+                {loading ? (
+                  <div className="text-center py-16 text-gray-500">جاري تحميل بيانات الخريطة...</div>
+                ) : error ? (
+                  <div className="text-center py-16 text-red-500">{error}</div>
+                ) : isParentOrStudent && !busIdProp ? (
+                  <div className="text-center py-16 text-gray-500">
+                    يرجى اختيار باص لعرض التتبع الحي.
+                  </div>
+                ) : (
+                  <LiveTrackingMap
+                    routeId={routeIdProp}
+                    busId={busIdProp}
+                    userRole={user?.role}
+                    buses={busesToShow}
+                    routes={routesToShow}
+                  />
+                )}
+
+                {/* Quick Stats */}
+                {/* حذف قسم الإحصائيات السريعة (Quick Stats) */}
+              </>
             )}
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Buses Online</p>
-                    <p className="text-2xl font-bold text-green-600">3/3</p>
-                  </div>
-                  <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
-                    <i className="fas fa-wifi text-green-600 text-xl"></i>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">On Time</p>
-                    <p className="text-2xl font-bold text-blue-600">2/3</p>
-                  </div>
-                  <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <i className="fas fa-clock text-blue-600 text-xl"></i>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Avg Speed</p>
-                    <p className="text-2xl font-bold text-purple-600">22 km/h</p>
-                  </div>
-                  <div className="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center">
-                    <i className="fas fa-tachometer-alt text-purple-600 text-xl"></i>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Total Passengers</p>
-                    <p className="text-2xl font-bold text-yellow-600">105</p>
-                  </div>
-                  <div className="h-12 w-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                    <i className="fas fa-users text-yellow-600 text-xl"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </section>
       </main>

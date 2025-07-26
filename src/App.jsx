@@ -40,6 +40,7 @@ import AdminRoutes from "./pages/AdminRoutes";
 import RedirectIfAuthenticated from "./components/RedirectIfAuthenticated";
 import OffCanvasLayout from "./layouts/OffCanvasLayout";
 import AdminTrips from "./pages/AdminTrips";
+import ChildProfile from './pages/ChildProfile';
 
 function App() {
   const dispatch = useDispatch();
@@ -76,7 +77,8 @@ function App() {
       '/help',
       '/driver-profile',
       '/parent-profile',
-      '/admin/trips'
+      '/admin/trips',
+      '/child/:childId'
     ];
     return dashboardPaths.some(path => location.pathname.startsWith(path));
   };
@@ -206,6 +208,11 @@ function App() {
           <Route path="/admin/trips" element={
             <RouteGuard allowedRoles={["admin", "manager"]}>
               <AdminTrips />
+            </RouteGuard>
+          } />
+          <Route path="/child/:childId" element={
+            <RouteGuard allowedRoles={["parent"]}>
+              <ChildProfile />
             </RouteGuard>
           } />
         </Route>

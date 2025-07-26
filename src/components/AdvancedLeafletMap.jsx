@@ -1194,31 +1194,6 @@ const AdvancedLeafletMap = ({
               </button>
             </div>
 
-            {/* الباصات المتاحة */}
-            {isTracking && (
-              <div className="control-group">
-                <label>الباصات المتاحة:</label>
-                <div className="available-buses">
-                  {availableBuses.map(bus => (
-                    <div
-                      key={bus.id}
-                      className={`bus-item ${bus.status}`}
-                      onClick={() => handleBusClick(bus)}
-                    >
-                      <div>
-                        <strong>{bus.number}</strong>
-                        <div style={{ fontSize: '10px', color: '#666' }}>{bus.route}</div>
-                      </div>
-                      <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontSize: '10px' }}>{bus.status === 'active' ? 'نشط' : 'متوقف'}</div>
-                        <div style={{ fontSize: '10px', color: '#666' }}>{Math.round(bus.speed)} كم/س</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* نوع الخريطة */}
             <div className="control-group">
               <label>نوع الخريطة:</label>
