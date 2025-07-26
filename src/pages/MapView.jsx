@@ -7,7 +7,10 @@ import TrackingTestPanel from "../components/TrackingTestPanel"
 import { useDispatch, useSelector } from "react-redux"
 import { fetchActiveBuses } from "../redux/trackingSlice"
 import { fetchRoutes } from "../redux/routesSlice"
+<<<<<<< HEAD
 import api from "../redux/api";
+=======
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
 
 const MapView = () => {
   const [viewMode, setViewMode] = useState("all") // all, route, bus
@@ -37,6 +40,7 @@ const MapView = () => {
     dispatch(fetchRoutes());
   }, [dispatch]);
 
+<<<<<<< HEAD
   // جلب الأبناء إذا كان Parent
   useEffect(() => {
     if (user?.role === "parent") {
@@ -60,6 +64,8 @@ const MapView = () => {
     }
   }, [user, selectedChild]);
 
+=======
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
   // منطق اختيار الباص للـ parent/student
   const isParentOrStudent = user?.role === "parent" || user?.role === "student"
   const busesForSelect = buses.map(bus => ({ id: bus._id || bus.id, name: bus.BusNumber || bus.number }))
@@ -86,6 +92,7 @@ const MapView = () => {
   const busIdFromQuery = params.get('busId');
   const routeIdFromQuery = params.get('routeId');
 
+<<<<<<< HEAD
   // تحديد الباص والمسار بناءً على الرحلة المختارة
   let busIdProp = null;
   let routeIdProp = null;
@@ -105,6 +112,13 @@ const MapView = () => {
   // تعريف المتغيرين دائمًا لتفادي الخطأ
   let busesToShow = buses;
   let routesToShow = routes;
+=======
+  // --- تمرير البيانات لمكون الخريطة ---
+  let busesToShow = buses
+  let routesToShow = routes
+  let busIdProp = busIdFromQuery || selectedBus || null
+  let routeIdProp = routeIdFromQuery || (viewMode === "route" ? selectedRoute : null)
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
 
   if (isParentOrStudent) {
     // parent/student: عرض باص واحد فقط (المختار)
@@ -118,10 +132,13 @@ const MapView = () => {
     }
   }
 
+<<<<<<< HEAD
   console.log('buses:', buses);
   console.log('routes:', routes);
   console.log('busIdProp:', busIdProp, 'routeIdProp:', routeIdProp);
 
+=======
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
   return (
     <div className="font-sans text-gray-800 bg-gray-50 min-h-screen">
       <main className="pt-0 pb-16">
@@ -165,6 +182,26 @@ const MapView = () => {
             {/* اختيار الباص للـ parent/student */}
             {/* حذف صندوق اختيار الباص للـ parent/student */}
 
+<<<<<<< HEAD
+=======
+            {/* اختيار الباص للـ parent/student */}
+            {hasMultipleBuses && (
+              <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h3 className="text-lg font-bold text-brand-dark-blue mb-4">اختر الباص الخاص بك</h3>
+                <select
+                  value={selectedBus}
+                  onChange={e => setSelectedBus(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-medium-blue focus:border-brand-medium-blue"
+                >
+                  <option value="">اختر باص...</option>
+                  {busesForSelect.map(bus => (
+                    <option key={bus.id} value={bus.id}>{bus.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
             {/* Filters Panel (لغير parent/student) */}
             {showFilters && !isParentOrStudent && (
               <div className="bg-white rounded-lg shadow-md p-6 mb-8">
@@ -235,6 +272,7 @@ const MapView = () => {
               </div>
             )}
 
+<<<<<<< HEAD
             {/* Parent Flow: اختيار الطفل ثم الرحلة */}
             {user?.role === "parent" ? (
               <div className="bg-white rounded-lg shadow-md p-6 mb-8">
@@ -251,6 +289,38 @@ const MapView = () => {
                       <option key={child._id} value={child._id}>{child.firstName} {child.lastName}</option>
                     ))}
                   </select>
+=======
+            {/* Live Tracking Map */}
+            {loading ? (
+              <div className="text-center py-16 text-gray-500">جاري تحميل بيانات الخريطة...</div>
+            ) : error ? (
+              <div className="text-center py-16 text-red-500">{error}</div>
+            ) : isParentOrStudent && !busIdProp ? (
+              <div className="text-center py-16 text-gray-500">
+                يرجى اختيار باص لعرض التتبع الحي.
+              </div>
+            ) : (
+              <LiveTrackingMap
+                routeId={routeIdProp}
+                busId={busIdProp}
+                userRole={user?.role}
+                buses={busesToShow}
+                routes={routesToShow}
+              />
+            )}
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Buses Online</p>
+                    <p className="text-2xl font-bold text-green-600">3/3</p>
+                  </div>
+                  <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <i className="fas fa-wifi text-green-600 text-xl"></i>
+                  </div>
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                 </div>
                 {selectedChild && (
                   <div className="mb-4">

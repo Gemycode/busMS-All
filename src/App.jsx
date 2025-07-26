@@ -40,7 +40,10 @@ import AdminRoutes from "./pages/AdminRoutes";
 import RedirectIfAuthenticated from "./components/RedirectIfAuthenticated";
 import OffCanvasLayout from "./layouts/OffCanvasLayout";
 import AdminTrips from "./pages/AdminTrips";
+<<<<<<< HEAD
 import ChildProfile from './pages/ChildProfile';
+=======
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
 
 function App() {
   const dispatch = useDispatch();
@@ -77,8 +80,12 @@ function App() {
       '/help',
       '/driver-profile',
       '/parent-profile',
+<<<<<<< HEAD
       '/admin/trips',
       '/child/:childId'
+=======
+      '/admin/trips'
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
     ];
     return dashboardPaths.some(path => location.pathname.startsWith(path));
   };
@@ -210,11 +217,14 @@ function App() {
               <AdminTrips />
             </RouteGuard>
           } />
+<<<<<<< HEAD
           <Route path="/child/:childId" element={
             <RouteGuard allowedRoles={["parent"]}>
               <ChildProfile />
             </RouteGuard>
           } />
+=======
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
         </Route>
         {/* باقي الصفحات العامة كما هي */}
         <Route path="/" element={<Home />} />

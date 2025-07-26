@@ -40,7 +40,10 @@ const DriverDashboard = () => {
   // --- Attendance for passengers ---
   const [passengerAttendance, setPassengerAttendance] = useState({}); // { [passengerId]: 'present' | 'absent' }
   const [routeStats, setRouteStats] = useState({}); // { [routeId]: { present: n, absent: n } }
+<<<<<<< HEAD
   const [expandedTripId, setExpandedTripId] = useState(null);
+=======
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
 
   // Dummy data for demonstration
 
@@ -61,6 +64,7 @@ const DriverDashboard = () => {
     setNotifications(dummyNotifications);
   }, [dispatch, user]);
 
+<<<<<<< HEAD
   useEffect(() => {
     console.log('trips:', trips);
   }, [trips]);
@@ -109,6 +113,8 @@ const DriverDashboard = () => {
       }
     }
   }, [trips, bookings, user]);
+=======
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
 
 
   useEffect(() => {
@@ -300,6 +306,7 @@ const DriverDashboard = () => {
                 <i className="fas fa-route text-brand-medium-blue text-xl"></i>
               </div>
               <div>
+<<<<<<< HEAD
                 <p className="text-sm font-medium text-gray-600">Assigned Trips</p>
                 <p className="text-2xl font-bold text-brand-dark-blue">
                   {assignedTrips.length}
@@ -317,6 +324,11 @@ const DriverDashboard = () => {
                 <p className="text-sm font-medium text-gray-600">Confirmed Trips</p>
                 <p className="text-2xl font-bold text-brand-dark-blue">
                   {confirmedTrips.length}
+=======
+                <p className="text-sm font-medium text-gray-600">Active Trips</p>
+                <p className="text-2xl font-bold text-brand-dark-blue">
+                  {trips.filter(t => t.status !== 'completed').length}
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                 </p>
               </div>
             </div>
@@ -370,7 +382,11 @@ const DriverDashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<<<<<<< HEAD
           {/* Trips Section */}
+=======
+          {/* Assigned Trips */}
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
           <div className="lg:col-span-2">
             {/* Confirmed Trips */}
             {confirmedTrips.length > 0 && (
@@ -412,7 +428,11 @@ const DriverDashboard = () => {
             <div className="bg-white rounded-lg shadow-md">
               <div className="p-6 border-b border-gray-200">
                 <h3 className="text-lg font-bold text-brand-dark-blue">Assigned Trips</h3>
+<<<<<<< HEAD
                 <p className="text-sm text-gray-600">Trips assigned but waiting for passenger bookings</p>
+=======
+                <p className="text-sm text-gray-600">Manage your assigned trips for today</p>
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
               </div>
               <div className="p-6">
                 <div className="mt-4 space-y-3">
@@ -420,6 +440,7 @@ const DriverDashboard = () => {
                     <p>Loading trips...</p>
                   ) : tripsError ? (
                     <p className="text-red-500">Error loading trips.</p>
+<<<<<<< HEAD
                   ) : assignedTrips.length > 0 ? (
                     assignedTrips.map((trip) => (
                       <div
@@ -473,12 +494,32 @@ const DriverDashboard = () => {
                             </div>
                           </div>
                         )}
+=======
+                  ) : trips.length > 0 ? (
+                    trips.map((trip) => (
+                      <div
+                        key={trip._id}
+                        onClick={() => handleTripSelect(trip)}
+                        className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${selectedTrip?._id === trip._id ? 'bg-brand-medium-blue text-white shadow-lg' : 'bg-gray-100 hover:bg-gray-200'}`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <p className="font-bold">{trip.routeId?.name}</p>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${trip.status === 'completed' ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'}`}>
+                            {trip.status}
+                          </span>
+                        </div>
+                        <p className="text-sm mt-1">{new Date(trip.date).toLocaleDateString()}</p>
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                       </div>
                     ))
                   ) : (
                     <div className="text-center py-6">
                       <i className="fas fa-route text-4xl text-gray-300 mb-3"></i>
+<<<<<<< HEAD
                       <p className="font-medium text-gray-600">No assigned trips for today.</p>
+=======
+                      <p className="font-medium text-gray-600">No trips assigned for today.</p>
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                       <p className="text-sm text-gray-500">Contact your administrator for assignments.</p>
                     </div>
                   )}

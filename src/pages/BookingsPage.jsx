@@ -15,6 +15,7 @@ const BookingsPage = () => {
       setLoading(true);
       try {
         const res = await api.get('/bookings/parent');
+<<<<<<< HEAD
         // Map backend data to UI format
         const bookings = (res.data || []).map((b) => ({
           _id: b._id,
@@ -29,6 +30,11 @@ const BookingsPage = () => {
       } catch (error) {
         setToast({ show: true, type: 'error', message: error.response?.data?.message || 'حدث خطأ أثناء جلب الحجوزات' });
         setBookings([]);
+=======
+        setBookings(res.data?.data?.bookings || []);
+      } catch (error) {
+        setToast({ show: true, type: 'error', message: error.response?.data?.message || 'حدث خطأ أثناء جلب الحجوزات' });
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
       } finally {
         setLoading(false);
       }
@@ -112,14 +118,21 @@ const BookingsPage = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bus</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+<<<<<<< HEAD
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Child</th>
+=======
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredBookings.length === 0 ? (
                         <tr>
+<<<<<<< HEAD
                           <td colSpan={7} className="text-center py-6 text-gray-500">No bookings found.</td>
+=======
+                          <td colSpan={6} className="text-center py-6 text-gray-500">No bookings found.</td>
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                         </tr>
                       ) : (
                         filteredBookings.map((booking) => (
@@ -139,7 +152,10 @@ const BookingsPage = () => {
                                 {booking.status}
                               </span>
                             </td>
+<<<<<<< HEAD
                             <td className="px-6 py-4 whitespace-nowrap">{booking.childName}</td>
+=======
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                             <td className="px-6 py-4 whitespace-nowrap">
                               {booking.status === 'confirmed' && (
                                 <button

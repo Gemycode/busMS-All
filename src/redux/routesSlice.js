@@ -6,7 +6,11 @@ export const fetchRoutes = createAsyncThunk(
   async (_, thunkAPI) => {
     try {
       const res = await api.get("/routes/");
+<<<<<<< HEAD
       return res.data; // الريسبونس مصفوفة مباشرة
+=======
+      return res.data.routes; // عدلت هنا ليعيد فقط مصفوفة الطرق
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
     } catch (err) {
       return thunkAPI.rejectWithValue(err.response?.data?.message || "Error fetching routes");
     }

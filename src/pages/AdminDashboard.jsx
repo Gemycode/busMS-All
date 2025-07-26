@@ -906,9 +906,15 @@ const AdminDashboard = () => {
                               <td className="px-6 py-4 whitespace-nowrap">{bus.capacity}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{bus.status}</td>
                               <td className="px-6 py-4 whitespace-nowrap">
+<<<<<<< HEAD
                                 {typeof bus.driverId === 'object' && bus.driverId !== null
                                   ? `${bus.driverId.firstName} ${bus.driverId.lastName}`
                                   : bus.driverId || '-'}
+=======
+                                {typeof bus.assigned_driver_id === 'object' && bus.assigned_driver_id !== null
+                                  ? `${bus.assigned_driver_id.firstName} ${bus.assigned_driver_id.lastName}`
+                                  : bus.assigned_driver_id || '-'}
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 {typeof bus.route_id === 'object' && bus.route_id !== null

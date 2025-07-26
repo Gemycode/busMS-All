@@ -130,6 +130,7 @@ const Header = () => {
                       <>
                         <Link
                           to="/dashboard/parent"
+<<<<<<< HEAD
                           className="flex items-center gap-2 w-full px-6 py-3 text-brand-dark-blue font-bold hover:bg-brand-dark-blue hover:text-brand-beige transition rounded-none"
                           onClick={() => setUserMenuOpen(false)}
                         >
@@ -146,6 +147,29 @@ const Header = () => {
                         </Link>
                       </>
                     )}
+=======
+                          className="block w-full text-center bg-brand-beige text-brand-dark-blue font-bold py-2 rounded hover:bg-opacity-90"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <i className="fas fa-home mr-1"></i>Parent Dashboard
+                        </Link>
+                        <Link
+                          to="/parent-profile"
+                          className="block w-full text-center bg-brand-beige text-brand-dark-blue font-bold py-2 rounded hover:bg-opacity-90"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <i className="fas fa-user mr-1"></i>Profile
+                        </Link>
+                      </>
+                    )}
+                    <Link
+                      to="/profile"
+                      className="block w-full text-center bg-[#ead8b1] text-[#0e90cb] font-bold py-2 rounded hover:bg-opacity-90"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      profile
+                    </Link>
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                     {user.role === 'admin' && (
                       <Link
                         to="/admin-dashboard"
@@ -216,6 +240,17 @@ const Header = () => {
             )}
           </div>
 
+          {/* Parent Dashboard Button (Desktop) */}
+          {user && user.role === 'parent' && (
+            <Link
+              to="/dashboard/parent"
+              className="font-medium text-brand-beige bg-brand-dark-blue border border-brand-beige rounded px-3 py-2 hover:bg-brand-beige hover:text-brand-dark-blue transition-colors duration-200"
+              style={{ marginLeft: 8 }}
+            >
+              <i className="fas fa-home mr-2"></i>Parent Dashboard
+            </Link>
+          )}
+
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center space-x-2">
             {/* Mobile Notification Bell */}
@@ -253,6 +288,7 @@ const Header = () => {
                 <i className="fas fa-home mr-1"></i>Parent Dashboard
               </Link>
             )}
+<<<<<<< HEAD
             {/* Driver Dashboard Button (Mobile) */}
             {user && user.role === 'driver' && (
               <>
@@ -272,6 +308,8 @@ const Header = () => {
                 </Link>
               </>
             )}
+=======
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
             <Link
               to="/"
               className="block px-3 py-2 text-white hover:text-brand-beige font-medium rounded-md"

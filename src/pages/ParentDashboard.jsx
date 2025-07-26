@@ -4,8 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchChildren, addChild } from '../redux/userSlice';
+<<<<<<< HEAD
 import api from '../redux/api';
 import Toast from '../components/Toast';
+=======
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
 
 const ParentDashboard = () => {
   const dispatch = useDispatch();
@@ -69,6 +72,7 @@ const ParentDashboard = () => {
     childrenCount: 2
   });
 
+<<<<<<< HEAD
   const [recentBookings, setRecentBookings] = useState([]);
   const [bookingsLoading, setBookingsLoading] = useState(true);
   const [bookingsError, setBookingsError] = useState(null);
@@ -76,6 +80,28 @@ const ParentDashboard = () => {
   useEffect(() => {
     fetchBookings();
   }, []);
+=======
+  const [recentBookings, setRecentBookings] = useState([
+    {
+      id: 1,
+      childName: 'Emma Johnson',
+      route: 'Route A - Downtown',
+      date: '2024-01-15',
+      time: '08:00 AM',
+      status: 'confirmed',
+      busNumber: 'BUS001'
+    },
+    {
+      id: 2,
+      childName: 'Michael Johnson',
+      route: 'Route B - Campus',
+      date: '2024-01-14',
+      time: '07:30 AM',
+      status: 'completed',
+      busNumber: 'BUS002'
+    }
+  ]);
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
 
   const [notifications, setNotifications] = useState([
     {
@@ -244,8 +270,13 @@ const ParentDashboard = () => {
         <section className="py-12">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             {/* Add Child Form */}
+<<<<<<< HEAD
             <div className="mb-12 max-w-xl mx-auto bg-white rounded-2xl shadow-xl p-8 border border-brand-light-blue">
               <h2 className="text-2xl font-bold text-brand-dark-blue mb-6 tracking-wide border-b pb-2">Add a Child</h2>
+=======
+            <div className="mb-8 max-w-xl mx-auto bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-bold text-brand-dark-blue mb-4">Add a Child</h2>
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
               <form onSubmit={handleAddChild} className="space-y-4">
                 <div className="flex gap-4">
                   <div className="flex-1">
@@ -256,7 +287,11 @@ const ParentDashboard = () => {
                       value={childForm.firstName}
                       onChange={handleInputChange}
                       required
+<<<<<<< HEAD
                       className="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-brand-dark-blue"
+=======
+                      className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                     />
                   </div>
                   <div className="flex-1">
@@ -267,7 +302,11 @@ const ParentDashboard = () => {
                       value={childForm.lastName}
                       onChange={handleInputChange}
                       required
+<<<<<<< HEAD
                       className="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-brand-dark-blue"
+=======
+                      className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                     />
                   </div>
                 </div>
@@ -278,7 +317,11 @@ const ParentDashboard = () => {
                     name="email"
                     value={childForm.email}
                     onChange={handleInputChange}
+<<<<<<< HEAD
                     className="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-brand-dark-blue"
+=======
+                    className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                   />
                 </div>
                 <div>
@@ -288,12 +331,20 @@ const ParentDashboard = () => {
                     name="password"
                     value={childForm.password}
                     onChange={handleInputChange}
+<<<<<<< HEAD
                     className="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-brand-dark-blue"
+=======
+                    className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                   />
                 </div>
                 <button
                   type="submit"
+<<<<<<< HEAD
                   className="w-full py-2 px-4 bg-brand-dark-blue text-white font-bold rounded-md hover:bg-brand-medium-blue transition-all duration-200 shadow-lg"
+=======
+                  className="w-full py-2 px-4 bg-brand-dark-blue text-white font-semibold rounded-md hover:bg-brand-medium-blue transition-all duration-200"
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                   disabled={addChildLoading}
                 >
                   {addChildLoading ? 'Adding...' : 'Add Child'}
@@ -302,10 +353,13 @@ const ParentDashboard = () => {
                 {addChildSuccess && <p className="text-green-600 text-sm mt-2">Child added successfully!</p>}
               </form>
             </div>
+<<<<<<< HEAD
 
             {/* Divider */}
             <div className="border-t-2 border-brand-light-blue my-12"></div>
 
+=======
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
             {/* Key Metrics */}
             <h2 className="text-xl font-bold text-brand-dark-blue mb-6 tracking-wide">Key Metrics</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
@@ -381,9 +435,15 @@ const ParentDashboard = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               {/* Children Status */}
+<<<<<<< HEAD
               <div className="bg-white rounded-2xl shadow-xl p-8 border border-brand-light-blue mb-8">
                 <div className="flex justify-between items-center mb-8">
                   <h2 className="text-2xl font-bold text-brand-dark-blue tracking-wide">Children Status</h2>
+=======
+              <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-bold text-brand-dark-blue">Children Status</h2>
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                 </div>
                 {childrenLoading ? (
                   <p>Loading children...</p>
@@ -402,9 +462,13 @@ const ParentDashboard = () => {
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <div className="flex items-center mb-2">
+<<<<<<< HEAD
                               <Link to={`/child/${child._id}`} className="font-semibold text-gray-900 hover:text-brand-dark-blue underline">
                                 {child.firstName} {child.lastName}
                               </Link>
+=======
+                              <h3 className="font-semibold text-gray-900">{child.firstName} {child.lastName}</h3>
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                             </div>
                             <p className="text-sm text-gray-600">
                               <i className="fas fa-id-card mr-1"></i>
@@ -485,9 +549,24 @@ const ParentDashboard = () => {
             <div className="border-t-2 border-brand-light-blue my-12"></div>
 
             {/* Notifications */}
+<<<<<<< HEAD
             <h2 className="text-xl font-bold text-brand-dark-blue mb-6 tracking-wide">Recent Notifications</h2>
             <div className="bg-white rounded-2xl shadow-xl p-8 border border-brand-light-blue">
               <div className="space-y-4">
+=======
+            <div className="mt-8">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-brand-dark-blue">Recent Notifications</h2>
+                <Link
+                  to="/notifications"
+                  className="text-brand-medium-blue hover:text-brand-dark-blue text-sm font-medium"
+                >
+                  View All →
+                </Link>
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="space-y-4">
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                   {(Array.isArray(notifications) ? notifications : []).slice(0, 3).map((notification) => (
                     <div key={notification.id} className={`flex items-start p-3 rounded-lg ${
                       notification.isRead ? 'bg-gray-50' : 'bg-blue-50'

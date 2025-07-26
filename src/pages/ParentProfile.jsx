@@ -11,6 +11,7 @@ const ParentProfile = () => {
   const [attendanceHistory, setAttendanceHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+<<<<<<< HEAD
   const [user, setUser] = useState(null);
   const [toast, setToast] = useState({ show: false, type: 'success', message: '' });
   const [editMode, setEditMode] = useState(false);
@@ -24,10 +25,13 @@ const ParentProfile = () => {
     confirmPassword: ''
   });
   const [editLoading, setEditLoading] = useState(false);
+=======
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
 
   // Fetch children and attendance on mount
   useEffect(() => {
     fetchChildrenAndAttendance();
+<<<<<<< HEAD
     fetchCurrentUser();
   }, []);
 
@@ -74,6 +78,31 @@ const ParentProfile = () => {
       const errorMsg = err.response?.data?.message || err.message || "Error loading data";
       setError(errorMsg);
       setToast({ show: true, type: 'error', message: errorMsg });
+=======
+  }, []);
+
+  const fetchChildrenAndAttendance = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      // Fetch children
+      const token = localStorage.getItem("token");
+      const childrenRes = await fetch("http://localhost:5000/api/users/me/children", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const childrenData = await childrenRes.json();
+      if (!childrenRes.ok) throw new Error(childrenData.message || "Failed to fetch children");
+      setChildren(childrenData.children || []);
+      // Fetch attendance for all children
+      const attendanceRes = await fetch("http://localhost:5000/api/attendances/parent", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const attendanceData = await attendanceRes.json();
+      if (!attendanceRes.ok) throw new Error(attendanceData.message || "Failed to fetch attendance");
+      setAttendanceHistory(attendanceData || []);
+    } catch (err) {
+      setError(err.message || "Error loading data");
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
     } finally {
       setLoading(false);
     }
@@ -91,6 +120,7 @@ const ParentProfile = () => {
         boardingTime: status === "present" ? new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" }) : "",
         deboardingTime: ""
       };
+<<<<<<< HEAD
       await axios.post("http://localhost:5000/api/attendances", attendanceData, {
         headers: {
           "Content-Type": "application/json",
@@ -102,6 +132,24 @@ const ParentProfile = () => {
     } catch (error) {
       const errorMsg = error.response?.data?.message || "Network error. Please try again.";
       setToast({ show: true, type: 'error', message: errorMsg });
+=======
+      const response = await fetch("http://localhost:5000/api/attendances", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(attendanceData),
+      });
+      if (response.ok) {
+        fetchChildrenAndAttendance();
+      } else {
+        const errData = await response.json();
+        alert(errData.message || "Error marking attendance");
+      }
+    } catch (error) {
+      alert("Network error. Please try again.");
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
     }
   };
 
@@ -264,6 +312,7 @@ const ParentProfile = () => {
                       <div className="h-24 w-24 rounded-full bg-brand-beige mx-auto mb-4 flex items-center justify-center">
                         <i className="fas fa-user text-brand-dark-blue text-3xl"></i>
                       </div>
+<<<<<<< HEAD
                       <h2 className="text-xl font-bold text-brand-dark-blue">
                         {user ? `${user.firstName} ${user.lastName}` : 'Parent Account'}
                       </h2>
@@ -458,6 +507,12 @@ const ParentProfile = () => {
                       </form>
                     </div>
                   )}
+=======
+                      <h2 className="text-xl font-bold text-brand-dark-blue">Parent Account</h2>
+                      <p className="text-gray-600">Parent</p>
+                    </div>
+                  </div>
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                 </div>
                 {/* Right Column - Children & Attendance */}
                 <div className="lg:col-span-2">
@@ -539,6 +594,7 @@ const ParentProfile = () => {
                         <table className="min-w-full divide-y divide-gray-200">
                           <thead className="bg-gray-50">
                             <tr>
+<<<<<<< HEAD
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -548,6 +604,20 @@ const ParentProfile = () => {
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Boarding</th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deboarding</th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+=======
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Student
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Date
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Boarding Time
+                              </th>
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
@@ -562,6 +632,7 @@ const ParentProfile = () => {
                                   {new Date(record.date).toLocaleDateString()}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
+<<<<<<< HEAD
                                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getAttendanceStatusColor(record.status)}`}>{record.status}</span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">{record.tripId?.routeId?.name || '-'}</td>
@@ -570,6 +641,15 @@ const ParentProfile = () => {
                                 <td className="px-6 py-4 whitespace-nowrap">{record.boardingTime || '-'}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">{record.deboardingTime || '-'}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">{record.notes || '-'}</td>
+=======
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getAttendanceStatusColor(record.status)}`}>
+                                    {record.status}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {record.boardingTime || "N/A"}
+                                </td>
+>>>>>>> 4729efbc99067405f72840029fa89122382d305b
                               </tr>
                             ))}
                           </tbody>
